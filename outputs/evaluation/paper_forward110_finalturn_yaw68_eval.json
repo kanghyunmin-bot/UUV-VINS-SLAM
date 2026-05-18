@@ -1,0 +1,42 @@
+{
+  "vins_csv": "outputs/evaluation/paper_forward110_finalturn_vins.csv",
+  "dvl_csv": "outputs/evaluation/dvl_xyz_30s_reference.csv",
+  "match_by": "time",
+  "success_only_vins": false,
+  "sample_reference_at_vins_times": true,
+  "zero_start": true,
+  "vins_yaw_offset_deg": 68.0,
+  "dvl_yaw_offset_deg": 0.0,
+  "sample_count": 316,
+  "targets": {
+    "max_axis_rmse_m": 1e-05,
+    "min_axis_corr": 0.9999
+  },
+  "passed": false,
+  "axis_rmse_m": {
+    "x": 0.7126915264679228,
+    "y": 0.3277981118598373,
+    "z": 0.17536929012825725
+  },
+  "axis_max_abs_error_m": {
+    "x": 1.5849390950590976,
+    "y": 0.692659987181609,
+    "z": 0.28619198423480036
+  },
+  "axis_corr": {
+    "x": 0.9429976949699937,
+    "y": 0.970640033534969,
+    "z": -0.24674172048327953
+  },
+  "mean_axis_corr": 0.5556320026738943,
+  "rmse_3d_m": 0.8038253553839547,
+  "max_3d_error_m": 1.7005427617980362,
+  "dvl_path_length_m": 8.038304634910563,
+  "rmse_ratio": 0.09999936452929646,
+  "rmse_match_percent": 90.00006354707035,
+  "direction_sample_count": 310,
+  "mean_direction_cosine": 0.7209931819579511,
+  "mean_direction_error_deg": 36.13845003889837,
+  "median_direction_error_deg": 22.325372051664125,
+  "p95_direction_error_deg": 91.60283595788326
+}

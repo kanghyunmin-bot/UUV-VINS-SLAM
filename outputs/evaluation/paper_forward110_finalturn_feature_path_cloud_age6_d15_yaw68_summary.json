@@ -1,0 +1,86 @@
+{
+  "mode": "vins_feature_cloud_filter",
+  "inputs": {
+    "odom_csv": "outputs/evaluation/paper_forward110_finalturn_vins.csv",
+    "feature_csv": "outputs/evaluation/paper_forward110_finalturn_point_cloud.csv",
+    "dvl_usage": "not_used"
+  },
+  "parameters": {
+    "coordinate_frame": "ros",
+    "zero_start": true,
+    "yaw_offset_deg": 68.0,
+    "min_track_age": 6,
+    "min_depth_m": 0.2,
+    "max_depth_m": 1.5,
+    "max_range_m": 1.5,
+    "path_corridor_radius_m": 1.2,
+    "trim_percentile": 100.0,
+    "selection_mode": "path-corridor",
+    "boundary_band_m": null,
+    "max_vertical_m": 1.32
+  },
+  "input_feature_rows": 11857,
+  "basic_filter_candidates": 1501,
+  "trimmed_candidates": 396,
+  "output_feature_rows": 394,
+  "rejection_counts": {
+    "missing_odom": 0,
+    "pose_failed": 0,
+    "track_age": 8530,
+    "camera_depth_or_range": 1826,
+    "path_corridor": 0,
+    "nonfinite": 0
+  },
+  "display_bounds": {
+    "min": [
+      3.6978462797357845,
+      -2.8528047044039613,
+      0.032063893
+    ],
+    "max": [
+      4.198988274903702,
+      0.20807762362016236,
+      0.266913949
+    ],
+    "range": [
+      0.5011419951679179,
+      3.0608823280241237,
+      0.23485005599999997
+    ]
+  },
+  "rectangle": {
+    "corners_xy": [
+      [
+        3.6969897150993347,
+        -2.851757287979126
+      ],
+      [
+        4.126559197902679,
+        -2.8678762912750244
+      ],
+      [
+        4.241788804531097,
+        0.20299100875854492
+      ],
+      [
+        3.8122193217277527,
+        0.21911001205444336
+      ],
+      [
+        3.6969897150993347,
+        -2.851757287979126
+      ]
+    ],
+    "edge_lengths_m": [
+      0.4298717981249599,
+      3.0730284470956666,
+      0.4298717981249599,
+      3.0730284470956666
+    ],
+    "angle_deg": 87.85107421875
+  },
+  "outputs": {
+    "filtered_feature_csv": "outputs/evaluation/paper_forward110_finalturn_feature_path_cloud_age6_d15_yaw68.csv",
+    "preview_png": "outputs/evaluation/paper_forward110_finalturn_feature_path_cloud_age6_d15_yaw68_preview.png"
+  }
+}

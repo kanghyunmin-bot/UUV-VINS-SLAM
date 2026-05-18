@@ -1,0 +1,25 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+outputs/
+video_src/
+*.mov
+*.mp4
+*.avi
+*.mkv
+*.webm
+*.bag
+*.db3
+*.sqlite3
+*.log
+*.aux
+*.out
+*.toc
+third_party/
+컴비/
+ros2_overlay_ws/build/
+ros2_overlay_ws/install/
+ros2_overlay_ws/log/
+PY
+, tr.child_frame_id*

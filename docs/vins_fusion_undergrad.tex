@@ -1,0 +1,1626 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{kotex}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,matrix,fit}
+
+\geometry{margin=23mm}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  urlcolor=blue!50!black
+}
+\setlist[itemize]{topsep=3pt,itemsep=2pt,parsep=0pt}
+\setlist[enumerate]{topsep=3pt,itemsep=2pt,parsep=0pt}
+\renewcommand{\arraystretch}{1.22}
+\emergencystretch=2em
+
+\definecolor{codebg}{HTML}{F8FAFC}
+\definecolor{codeframe}{HTML}{CBD5E1}
+\definecolor{codelinenum}{HTML}{64748B}
+\definecolor{codekeyword}{HTML}{2563EB}
+\definecolor{codestring}{HTML}{B45309}
+\definecolor{codecomment}{HTML}{15803D}
+\definecolor{codeemph}{HTML}{BE123C}
+\definecolor{stageblue}{HTML}{E0F2FE}
+\definecolor{stagegreen}{HTML}{DCFCE7}
+\definecolor{stageorange}{HTML}{FFEDD5}
+\definecolor{stagered}{HTML}{FEE2E2}
+\definecolor{ink}{HTML}{0F172A}
+\definecolor{muted}{HTML}{475569}
+\definecolor{gridline}{HTML}{CBD5E1}
+\definecolor{accentblue}{HTML}{2563EB}
+\definecolor{accentgreen}{HTML}{16A34A}
+\definecolor{accentorange}{HTML}{EA580C}
+\definecolor{accentred}{HTML}{DC2626}
+\definecolor{mathstate}{HTML}{1D4ED8}
+\definecolor{mathmeas}{HTML}{15803D}
+\definecolor{mathparam}{HTML}{C2410C}
+\definecolor{mathres}{HTML}{BE123C}
+
+\lstdefinestyle{codestyle}{
+  basicstyle=\ttfamily\scriptsize,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  frame=single,
+  framerule=0.45pt,
+  rulecolor=\color{codeframe},
+  backgroundcolor=\color{codebg},
+  numbers=left,
+  numberstyle=\tiny\color{codelinenum},
+  numbersep=8pt,
+  xleftmargin=2.3em,
+  framexleftmargin=1.8em,
+  keywordstyle=\bfseries\color{codekeyword},
+  commentstyle=\itshape\color{codecomment},
+  stringstyle=\color{codestring},
+  emph={Estimator,FeatureTracker,FeatureManager,IntegrationBase,IMUFactor,PoseGraph,KeyFrame,trackImage,inputImage,inputIMU,processMeasurements,processImage,processIMU,addFeatureCheckParallax,triangulate,triangulatePoint,initFramePoseByPnP,optimization,marginalize,slideWindow,calcOpticalFlowPyrLK,goodFeaturesToTrack,findFundamentalMat,solvePnP,AddResidualBlock,ceres,Solve},
+  emphstyle=\bfseries\color{codeemph},
+  showstringspaces=false,
+  tabsize=2,
+  captionpos=t
+}
+\lstset{style=codestyle}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\snippet}[1]{\noindent\textbf{#1}}
+\newcommand{\codeheading}[1]{\par\vspace{6pt}\noindent{\footnotesize\bfseries\textcolor{codeemph}{#1}}\par\vspace{2pt}}
+\newcommand{\readpoint}[1]{\par\noindent{\footnotesize\textcolor{muted}{읽는 포인트: #1}}\par\vspace{2pt}}
+\newenvironment{codeanalysis}{%
+  \par\vspace{2pt}\noindent
+  {\footnotesize\bfseries\textcolor{accentblue}{코드 분석}}\par
+  \begin{itemize}[leftmargin=1.35em,topsep=2pt,itemsep=1pt,parsep=0pt]
+  \footnotesize
+}{%
+  \end{itemize}
+  \vspace{6pt}
+}
+\newcommand{\smalltable}{\small}
+\newcommand{\cstate}[1]{\textcolor{mathstate}{#1}}
+\newcommand{\cmeas}[1]{\textcolor{mathmeas}{#1}}
+\newcommand{\cparam}[1]{\textcolor{mathparam}{#1}}
+\newcommand{\cres}[1]{\textcolor{mathres}{#1}}
+\newcommand{\mathlegend}{%
+  \par\noindent{\footnotesize
+  \textcolor{mathstate}{\(\blacksquare\)} 상태/최적화 변수 \quad
+  \textcolor{mathmeas}{\(\blacksquare\)} 센서 관측 \quad
+  \textcolor{mathparam}{\(\blacksquare\)} 파라미터/노이즈 \quad
+  \textcolor{mathres}{\(\blacksquare\)} residual/error
+  }\par\vspace{6pt}
+}
+\newsavebox{\learningbox}
+\newenvironment{definitionbox}[1]{%
+  \par\vspace{6pt}
+  \def\boxtitle{#1}%
+  \begin{lrbox}{\learningbox}
+  \begin{minipage}{0.92\linewidth}
+  \footnotesize\textbf{\textcolor{accentblue}{핵심 정의: #1}}\par\vspace{3pt}
+}{%
+  \end{minipage}
+  \end{lrbox}
+  \noindent\fcolorbox{accentblue!55}{stageblue!55}{\usebox{\learningbox}}
+  \par\vspace{6pt}
+}
+\newenvironment{examplebox}[1]{%
+  \par\vspace{6pt}
+  \def\boxtitle{#1}%
+  \begin{lrbox}{\learningbox}
+  \begin{minipage}{0.92\linewidth}
+  \footnotesize\textbf{\textcolor{accentgreen!55!black}{간단 예시: #1}}\par\vspace{3pt}
+}{%
+  \end{minipage}
+  \end{lrbox}
+  \noindent\fcolorbox{accentgreen!55!black}{stagegreen!55}{\usebox{\learningbox}}
+  \par\vspace{6pt}
+}
+\newenvironment{takeawaybox}[1]{%
+  \par\vspace{6pt}
+  \def\boxtitle{#1}%
+  \begin{lrbox}{\learningbox}
+  \begin{minipage}{0.92\linewidth}
+  \footnotesize\textbf{\textcolor{accentorange!80!black}{정리: #1}}\par\vspace{3pt}
+}{%
+  \end{minipage}
+  \end{lrbox}
+  \noindent\fcolorbox{accentorange!75!black}{stageorange!60}{\usebox{\learningbox}}
+  \par\vspace{6pt}
+}
+\newcounter{diagram}
+\newcommand{\figcaptiontext}[1]{\refstepcounter{diagram}\par\vspace{8pt}{\footnotesize\color{muted}\textbf{그림 \thediagram.} #1}\par}
+\newenvironment{visualblock}{%
+  \par\vspace{12pt}
+  \begin{center}
+}{%
+  \end{center}
+  \vspace{16pt}
+  \clearpage
+}
+
+\tikzset{
+  stage/.style={draw, rounded corners=2pt, align=center, inner sep=4pt, font=\small},
+  input/.style={stage, fill=stageblue, draw=blue!45!black},
+  visual/.style={stage, fill=stagegreen, draw=green!45!black},
+  backend/.style={stage, fill=stageorange, draw=orange!65!black},
+  risk/.style={stage, fill=stagered, draw=red!55!black},
+  pipebox/.style={draw, rounded corners=2pt, align=center, inner sep=4pt, font=\scriptsize, minimum height=10mm, text width=23mm},
+  pipeinput/.style={pipebox, fill=stageblue, draw=accentblue!70!black},
+  pipevisual/.style={pipebox, fill=stagegreen, draw=accentgreen!70!black},
+  pipebackend/.style={pipebox, fill=stageorange, draw=accentorange!75!black},
+  piperisk/.style={pipebox, fill=stagered, draw=accentred!75!black},
+  figlabel/.style={font=\scriptsize\bfseries, text=muted, align=left},
+  axislabel/.style={font=\scriptsize, text=ink},
+  note/.style={draw=gridline, fill=codebg, rounded corners=2pt, align=left, inner sep=4pt, font=\scriptsize, text width=33mm},
+  factor/.style={draw=accentorange!75!black, fill=stageorange, rounded corners=1pt, minimum width=13mm, minimum height=7mm, align=center, font=\scriptsize},
+  var/.style={draw=accentblue!75!black, fill=stageblue, circle, minimum size=9mm, align=center, font=\scriptsize},
+  landmark/.style={draw=accentgreen!75!black, fill=stagegreen, circle, minimum size=9mm, align=center, font=\scriptsize},
+  arrow/.style={-{Latex[length=2.1mm]}, thick},
+  softarrow/.style={-{Latex[length=2.0mm]}, thick, dashed},
+  graphline/.style={line width=1.15pt},
+  grid/.style={draw=gridline, line width=0.25pt}
+}
+
+\title{수중 UUV VIO-SLAM을 위한 VINS-Fusion 코드 분석}
+\author{under\_water\_image\_match 프로젝트 정리}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{왜 VINS-Fusion을 분석하는가}
+
+수중 UUV가 수영장이나 저시야 환경에서 자기 위치와 자세를 추정하려면 단순 image matching만으로는 부족하다.
+반복 타일, 낮은 텍스처, blur, 조명 변화 때문에 feature가 끊기고, stereo depth는 calibration과 disparity 오차에 민감하며, 장시간 주행하면 local odometry가 drift한다.
+따라서 실전 구조는 다음 네 가지가 함께 있어야 한다.
+
+\begin{enumerate}
+  \item 영상에서 feature를 안정적으로 추적한다.
+  \item stereo 또는 motion으로 feature depth를 만든다.
+  \item IMU로 feature 부족 구간의 motion prior를 제공한다.
+  \item loop, sonar, depth, map 같은 global constraint로 drift를 줄인다.
+\end{enumerate}
+
+VINS-Fusion은 이 흐름을 실제 C++ 코드로 구현한 대표적인 VIO/SLAM 코드베이스다.
+이 문서는 GUI 사용법이 아니라, \textbf{VINS-Fusion 원본 코드가 어떤 수식과 파라미터로 pose를 추정하는지}를 분석한다.
+GUI와 MP4 변환 코드는 마지막에 wrapper로만 다룬다.
+
+\section{실제 코드 범위}
+
+분석 대상은 현재 workspace의 \path{third_party/VINS-Fusion}이다.
+해당 디렉터리는 \url{https://github.com/HKUST-Aerial-Robotics/VINS-Fusion.git}를 remote로 가지며, 현재 checkout commit은 \code{be55a937a57436548ddfb1bd324bc1e9a9e828e0}이다.
+
+\begin{tabularx}{\linewidth}{p{0.31\linewidth}Y}
+\toprule
+\textbf{모듈} & \textbf{역할} \\
+\midrule
+\path{vins_estimator} & VIO의 중심. image/IMU 입력, feature tracking, initialization, sliding-window optimization, marginalization을 수행한다. \\
+\path{featureTracker} & KLT optical flow 기반 feature frontend. \\
+\path{factor} & visual projection factor, IMU factor, marginalization factor 등 Ceres residual 구현. \\
+\path{loop_fusion} & loop closure와 pose graph optimization. local VIO를 SLAM에 가깝게 확장하는 부분. \\
+\path{camera_models} & camera projection, undistortion 모델. 수중 calibration과 직접 연결된다. \\
+\bottomrule
+\end{tabularx}
+
+\section{처음 보는 사람을 위한 핵심 용어}
+
+\begin{definitionbox}{VO, VIO, SLAM의 차이}
+\textbf{VO(Visual Odometry)}는 camera image만으로 이전 위치에서 현재 위치로 얼마나 움직였는지 추정한다.
+\textbf{VIO(Visual-Inertial Odometry)}는 image에 IMU를 더해 feature가 부족하거나 blur가 있어도 motion prior를 얻는다.
+\textbf{SLAM}은 local odometry에 loop, sonar, marker, map 같은 global constraint를 더해 장시간 drift를 줄인다.
+\end{definitionbox}
+
+\begin{examplebox}{수영장 UUV 상황}
+UUV가 타일 벽을 따라 10 m 이동한다고 하자.
+VO는 image feature만 보고 움직임을 추정하므로 반복 타일에서 잘못 붙을 수 있다.
+VIO는 IMU가 ``지금 회전/가속이 이 정도였다''는 힌트를 준다.
+SLAM은 나중에 같은 부표나 marker를 다시 봤을 때 ``아까 본 곳으로 돌아왔다''는 제약을 추가해 누적 drift를 줄인다.
+\end{examplebox}
+
+\small
+\begin{tabularx}{\linewidth}{p{0.20\linewidth}p{0.27\linewidth}Y}
+\toprule
+\textbf{용어} & \textbf{짧은 정의} & \textbf{이 문서에서 보는 위치} \\
+\midrule
+feature & 이미지에서 추적할 점. corner, texture point 등. & \code{feature\_tracker.cpp}의 KLT tracking. \\
+track & 같은 feature가 여러 frame에서 이어진 기록. & feature lifetime, parallax, keyframe 판단. \\
+correspondence & 서로 다른 두 이미지에서 같은 3D 점이라고 가정한 2D 점 쌍. & KLT, stereo matching, RANSAC. \\
+inlier/outlier & geometry model을 만족하는 점/만족하지 않는 점. & RANSAC gate, robust loss. \\
+residual & 예측과 실제 관측의 차이. 작을수록 모델이 관측을 잘 설명한다. & projection factor, IMU factor, prior factor. \\
+factor graph & 상태 변수와 residual 제약을 그래프로 표현한 것. & sliding-window optimization. \\
+inverse depth & depth \(Z\) 대신 \(\lambda=1/Z\)를 쓰는 표현. & feature depth 최적화. \\
+marginalization & window 밖으로 나가는 변수를 prior로 압축하는 과정. & sliding window 유지. \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\section{전체 파이프라인}
+
+\begin{visualblock}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \node[figlabel, anchor=west] at (0.00,3.10) {1. 입력/보정};
+  \node[figlabel, anchor=west] at (2.85,3.10) {2. Frontend};
+  \node[figlabel, anchor=west] at (5.70,3.10) {3. Geometry};
+  \node[figlabel, anchor=west] at (8.55,3.10) {4. Backend};
+  \node[figlabel, anchor=west] at (11.40,3.10) {5. SLAM 확장};
+
+  \node[pipeinput, text width=22mm] (cfg) at (1.05,2.45) {YAML\\params};
+  \node[pipeinput, text width=22mm] (cam) at (1.05,1.35) {stereo image\\\(I^L_k,I^R_k\)};
+  \node[pipeinput, text width=22mm] (imuin) at (1.05,0.25) {IMU\\\(a_t,\omega_t\)};
+
+  \node[pipevisual, text width=23mm] (klt) at (3.95,2.45) {KLT tracking\\\(\Delta p^*\)};
+  \node[pipevisual, text width=23mm] (mask) at (3.95,1.35) {grid/mask\\feature spread};
+  \node[pipevisual, text width=23mm] (gate) at (3.95,0.25) {FB/RANSAC\\outlier gate};
+
+  \node[pipevisual, text width=23mm] (tri) at (6.80,2.45) {stereo depth\\\(Z=f_xb/d\)};
+  \node[pipevisual, text width=23mm] (fm) at (6.80,1.35) {feature manager\\track lifetime};
+  \node[pipevisual, text width=23mm] (par) at (6.80,0.25) {keyframe\\parallax \(\bar p\)};
+
+  \node[pipebackend, text width=23mm] (preint) at (9.65,2.45) {IMU preint.\\\(\Delta R,\Delta v,\Delta p\)};
+  \node[pipebackend, text width=23mm] (init) at (9.65,1.35) {init\\PnP / depth};
+  \node[pipebackend, text width=23mm] (opt) at (9.65,0.25) {sliding window\\Ceres};
+
+  \node[piperisk, text width=23mm] (loop) at (12.50,2.45) {loop\\pose graph};
+  \node[piperisk, text width=23mm] (sonar) at (12.50,1.35) {sonar/depth\\global factor};
+  \node[piperisk, text width=23mm] (rviz) at (12.50,0.25) {odom/path\\RViz};
+
+  \draw[arrow] (cam) -- (klt);
+  \draw[arrow] (cfg) -- (klt);
+  \draw[arrow] (klt) -- (mask);
+  \draw[arrow] (mask) -- (gate);
+  \draw[arrow] (gate) -- (tri);
+  \draw[arrow] (tri) -- (fm);
+  \draw[arrow] (fm) -- (par);
+  \draw[arrow] (par) -- (init);
+  \draw[arrow] (imuin) -- (preint);
+  \draw[arrow] (preint) -- (init);
+  \draw[arrow] (init) -- (opt);
+  \draw[arrow] (opt) -- (rviz);
+  \draw[softarrow] (opt) -- (loop);
+  \draw[softarrow] (sonar) -- (opt);
+  \draw[softarrow] (loop) -- (opt);
+
+  \node[note, text width=116mm, anchor=west] at (0.05,-1.05)
+    {이 문서는 위 흐름을 그대로 따른다. 각 단계는 \textbf{목적 \(\rightarrow\) 색상 수식 \(\rightarrow\) 파라미터 영향 \(\rightarrow\) 실제 코드 위치 \(\rightarrow\) 수중 튜닝 포인트} 순서로 읽는다.};
+\end{tikzpicture}
+\figcaptiontext{문서 전체 구조를 VINS 실행 파이프라인 순서로 재배치한 그림. 앞쪽은 feature와 depth를 만드는 frontend, 뒤쪽은 residual을 묶어 푸는 backend, 마지막은 SLAM/global correction이다.}
+\end{visualblock}
+
+\begin{tabularx}{\linewidth}{p{0.21\linewidth}p{0.27\linewidth}Y}
+\toprule
+\textbf{단계} & \textbf{핵심 코드} & \textbf{핵심 질문} \\
+\midrule
+Config & \path{parameters.cpp} & 어떤 파라미터가 어떤 수식항에 연결되는가? \\
+Feature tracking & \path{feature_tracker.cpp} & 수중 반복 패턴에서 feature가 안정적으로 살아남는가? \\
+Stereo depth & \path{feature_manager.cpp} & baseline/intrinsic/disparity가 depth scale을 얼마나 흔드는가? \\
+IMU & \path{integration_base.h}, \path{imu_factor.h} & camera와 IMU residual이 같은 motion을 설명하는가? \\
+Optimization & \path{estimator.cpp}, \path{projection*.cpp} & visual/IMU/prior residual을 동시에 최소화하는가? \\
+SLAM extension & \path{loop_fusion}, sonar/global factor & local drift를 외부 constraint로 잡을 수 있는가? \\
+\bottomrule
+\end{tabularx}
+
+\mathlegend
+
+\begin{tabularx}{\linewidth}{p{0.22\linewidth}p{0.22\linewidth}Y}
+\toprule
+\textbf{현재 생성 config 기준} & \textbf{값} & \textbf{읽는 기준} \\
+\midrule
+\code{max\_cnt} & 150 & 반복 타일이 많으면 150을 그대로 올리기보다 \code{min\_dist}, \code{flow\_back}, RANSAC gate를 먼저 본다. \\
+\code{min\_dist} & 30 px & 같은 타일 무늬에 feature가 몰리는 것을 막는 시작값. 848x480 영상에서는 무난한 보수값이다. \\
+\code{F\_threshold} & 1.0 px & RANSAC을 켰을 때 pixel 단위 epipolar gate. 현재 VINS 코드 경로에서는 호출이 꺼져 있으므로 별도 활성화가 필요하다. \\
+\code{keyframe\_parallax} & 10 px & VINS 기본 stereo/mono-IMU config와 같은 시작값. 수영장처럼 texture가 약하면 실제 track lifetime과 같이 조정한다. \\
+\code{max\_solver\_time} & 0.04 s & realtime을 위한 backend budget. Docker/Mac 실험에서는 결과 품질보다 실행 가능성을 먼저 보는 값이다. \\
+\bottomrule
+\end{tabularx}
+
+\section{0단계: Config가 estimator의 전역 파라미터가 된다}
+
+\subsection*{핵심 개념}
+
+\begin{definitionbox}{Config}
+Config는 알고리즘의 ``실험 조건표''다.
+feature를 몇 개까지 뽑을지, camera calibration을 무엇으로 볼지, solver를 몇 초까지 돌릴지 같은 값이 여기서 정해진다.
+코드에서는 이 값들이 전역 변수로 읽힌 뒤 frontend와 backend에서 반복 사용된다.
+\end{definitionbox}
+
+\begin{examplebox}{파라미터 하나가 결과를 바꾸는 방식}
+\code{max\_cnt=80}이면 backend가 사용할 visual residual 후보가 적어진다.
+\code{max\_cnt=200}이면 후보는 늘지만, 수영장 타일처럼 반복 패턴이 많을 때 outlier도 함께 늘 수 있다.
+따라서 ``feature 수가 많다''는 말은 ``좋은 pose constraint가 많다''와 같지 않다.
+\end{examplebox}
+
+VINS-Fusion의 많은 튜닝 값은 YAML에서 읽혀 전역 변수로 저장된다.
+따라서 GUI에서 값을 바꾸든 YAML을 직접 수정하든, 최종적으로는 \code{readParameters()}가 읽는 값으로 들어간다.
+
+\[
+\cparam{\text{YAML config}}
+\rightarrow
+\cparam{\{\code{MAX\_CNT},\code{MIN\_DIST},\code{F\_THRESHOLD},\code{MIN\_PARALLAX},\code{SOLVER\_TIME},\ldots\}}
+\rightarrow
+\cstate{\text{frontend/backend}}
+\]
+
+\clearpage
+\subsection*{파라미터 연결 지도}
+
+\begin{visualblock}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \draw[gridline, line width=0.35pt] (-0.15,0.72) -- (9.60,0.72);
+  \node[figlabel, anchor=south] at (1.2,0.92) {YAML 파라미터};
+  \node[figlabel, anchor=south] at (4.7,0.92) {수식/상태항};
+  \node[figlabel, anchor=south] at (8.2,0.92) {최적화 residual};
+
+  \node[pipeinput] (featurep) at (1.2,0.00) {\code{MAX\_CNT}\\\code{MIN\_DIST}\\\code{FLOW\_BACK}};
+  \node[pipevisual] (featureterm) at (4.7,0.00) {track 품질\\\(\Delta\mathbf{p}^{*}, N\)};
+  \node[pipebackend] (visres) at (8.2,0.00) {projection\\\(\mathbf{r}_{proj}\)};
+
+  \node[pipeinput] (calibp) at (1.2,-1.55) {\code{fx,fy,cx,cy}\\\code{baseline}};
+  \node[pipevisual] (depthterm) at (4.7,-1.55) {stereo depth\\\(Z=f_xb/d\)};
+  \node[pipebackend] (lambda) at (8.2,-1.55) {inverse depth\\\(\lambda=1/Z\)};
+
+  \node[pipeinput] (imup) at (1.2,-3.10) {\code{acc\_n,gyr\_n}\\\code{acc\_w,gyr\_w}\\\code{td}};
+  \node[pipevisual] (imuterm) at (4.7,-3.10) {preintegration\\\(\Delta R,\Delta v,\Delta p\)};
+  \node[pipebackend] (imures) at (8.2,-3.10) {IMU factor\\\(\mathbf{r}_{imu}\)};
+
+  \node[pipeinput] (solverp) at (1.2,-4.65) {\code{solver\_time}\\\code{iterations}\\\code{WINDOW\_SIZE}};
+  \node[pipevisual] (hterm) at (4.7,-4.65) {normal equation\\\(H\delta x=b\)};
+  \node[pipebackend] (runtime) at (8.2,-4.65) {runtime\\vs. accuracy};
+
+  \draw[arrow] (featurep) -- (featureterm);
+  \draw[arrow] (featureterm) -- (visres);
+  \draw[arrow] (calibp) -- (depthterm);
+  \draw[arrow] (depthterm) -- (lambda);
+  \draw[arrow] (lambda.north) -- ++(0,0.42) -| (visres.south);
+  \draw[arrow] (imup) -- (imuterm);
+  \draw[arrow] (imuterm) -- (imures);
+  \draw[arrow] (imures.south) -- ++(0,-0.42) -| (hterm.east);
+  \draw[arrow] (solverp) -- (hterm);
+  \draw[arrow] (hterm) -- (runtime);
+
+  \node[note, anchor=west, text width=38mm] at (9.85,-1.75)
+    {수중 stereo에서 가장 민감한 경로는 calibration \(\rightarrow\) depth \(\rightarrow\) reprojection residual이다. 여기 값이 틀리면 feature가 많아도 metric scale이 흔들린다.};
+\end{tikzpicture}
+\figcaptiontext{튜닝 파라미터가 단순 옵션이 아니라 residual의 weight, 상태 변수, geometry scale에 직접 연결되는 구조.}
+\end{visualblock}
+
+\subsection*{핵심 파라미터}
+
+\small
+\begin{tabularx}{\linewidth}{p{0.20\linewidth}p{0.25\linewidth}Y}
+\toprule
+\textbf{파라미터} & \textbf{직접 연결되는 항} & \textbf{영향} \\
+\midrule
+\code{MAX\_CNT} & feature 수 \(N\) & visual residual 개수를 바꾼다. 너무 작으면 constraint 부족, 너무 크면 outlier와 계산량 증가. \\
+\code{MIN\_DIST} & feature 공간 분포 & feature가 한 타일/벽면에 몰리는 것을 막는다. 너무 크면 feature 부족. \\
+\code{FLOW\_BACK} & 왕복 추적 오차 & KLT outlier를 제거한다. 수중 반복 패턴에서는 켜는 것이 안전하다. \\
+\code{F\_THRESHOLD} & epipolar RANSAC threshold & 현재 코드에서는 \code{rejectWithF()}가 주석 처리되어 직접 적용되지 않는다. 켜면 threshold가 작을수록 엄격하다. \\
+\code{keyframe\_parallax} & \(\bar{p}\), \code{MIN\_PARALLAX} & keyframe 빈도와 marginalization 방향을 바꾼다. \\
+\code{max\_solver\_time} & Ceres time budget & realtime성과 수렴 품질 사이 trade-off. \\
+\code{max\_num\_iterations} & Ceres iteration count & 수렴 전 종료 여부와 계산량에 영향. \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\subsection*{실제 코드}
+
+\readpoint{YAML key가 전역 변수로 들어가고, 이후 frontend/backend 코드가 같은 값을 공유한다.}
+\codeheading{parameters.cpp:66--108}
+\lstinputlisting[language=C++,firstline=66,lastline=108,firstnumber=66]{third_party/VINS-Fusion/vins_estimator/src/estimator/parameters.cpp}
+\begin{codeanalysis}
+  \item \code{MAX\_CNT}, \code{MIN\_DIST}, \code{F\_THRESHOLD}는 feature frontend의 입력 품질을 정한다. 즉 backend 수식보다 앞에서 residual 후보 자체를 바꾸는 값이다.
+  \item \code{MIN\_PARALLAX}는 YAML의 pixel 값 \code{keyframe\_parallax}를 \code{FOCAL\_LENGTH}로 나눈 normalized threshold다. 그래서 image resize나 focal 설정이 바뀌면 같은 10 px도 다른 geometry 의미가 된다.
+  \item \code{SOLVER\_TIME}, \code{NUM\_ITERATIONS}는 Ceres가 얼마나 오래 \(H\delta x=b\)를 풀지 정한다. feature가 나쁘면 이 값을 키워도 outlier를 정확도로 바꾸지는 못한다.
+  \item 수중 UUV에서는 이 함수가 읽는 값이 실험 조건표의 기준이다. GUI 값, YAML 값, 실제 estimator 전역 변수가 서로 다른지 먼저 확인해야 한다.
+\end{codeanalysis}
+
+\section{1단계: Sensor input과 timestamp}
+
+\begin{definitionbox}{Sensor input과 timestamp}
+Sensor input은 camera image와 IMU measurement 자체이고, timestamp는 그 측정이 발생한 시간이다.
+VIO에서는 값의 크기만큼이나 ``언제 측정됐는가''가 중요하다.
+camera와 IMU 시간이 어긋나면 같은 motion을 서로 다른 시간에서 설명하려고 해서 residual이 커진다.
+\end{definitionbox}
+
+\begin{examplebox}{시간 오차가 만드는 문제}
+UUV가 빠르게 yaw 회전하는 순간을 생각하자.
+camera frame은 \(t=1.00\)초인데 IMU가 \(t=0.95\)초 motion으로 연결되면, visual은 이미 회전한 장면을 보고 IMU는 회전 전 motion을 주장한다.
+이때 backend는 둘을 동시에 만족시키려다 pose가 흔들릴 수 있다.
+\end{examplebox}
+
+\subsection*{수식}
+
+VIO에서 입력은 camera frame과 IMU measurement다.
+
+\[
+\cmeas{I_k} \quad \text{at} \quad \cmeas{t_k},
+\qquad
+\cmeas{\mathbf{u}_t} =
+\begin{bmatrix}
+\cmeas{\mathbf{a}_t} \\
+\cmeas{\boldsymbol{\omega}_t}
+\end{bmatrix}
+\]
+
+\subsection*{각 항의 의미}
+
+\begin{tabularx}{\linewidth}{p{0.18\linewidth}Y}
+\toprule
+\textbf{항} & \textbf{의미} \\
+\midrule
+\(I_k\) & \(k\)번째 camera frame. stereo라면 left/right pair가 같은 timestamp에 있어야 한다. \\
+\(t_k\) & camera timestamp. IMU preintegration 구간을 자르는 기준이다. \\
+\(\mathbf{a}_t\) & accelerometer 측정값. 실제 가속도, 중력, bias, noise가 섞인다. \\
+\(\boldsymbol{\omega}_t\) & gyroscope 측정값. 각속도, bias, noise가 섞인다. \\
+\bottomrule
+\end{tabularx}
+
+\subsection*{파라미터와 영향}
+
+\begin{tabularx}{\linewidth}{p{0.20\linewidth}p{0.27\linewidth}p{0.25\linewidth}Y}
+\toprule
+\textbf{파라미터} & \textbf{수식/코드 항} & \textbf{작게/느리면} & \textbf{크게/빠르면} \\
+\midrule
+camera FPS & \(t_k-t_{k-1}\) & frame 간 motion이 커져 KLT 실패 가능성 증가. & 계산량 증가, tracking은 쉬워짐. \\
+IMU rate & \(\Delta t\) & 빠른 회전/가속을 놓쳐 preintegration이 거칠어짐. & motion prior는 좋아지나 처리량 증가. \\
+time offset \(\code{td}\) & image time 보정 & 값의 대소보다 정확성이 중요. 틀리면 visual residual과 IMU residual이 충돌. & 동일. 빠른 motion일수록 민감. \\
+\bottomrule
+\end{tabularx}
+
+\subsection*{실제 코드}
+
+\codeheading{KITTIOdomTest.cpp:88--113}
+\lstinputlisting[language=C++,firstline=88,lastline=113,firstnumber=88]{third_party/VINS-Fusion/vins_estimator/src/KITTIOdomTest.cpp}
+\begin{codeanalysis}
+  \item 이 코드는 KITTI-style stereo image sequence를 시간 순서대로 읽고 estimator에 넣는 테스트 runner다. 즉 ROS topic이 아니라 파일 기반 실험 입구다.
+  \item left/right image가 같은 index와 timestamp로 들어간다는 가정이 있다. MP4에서 frame drop이나 길이 차이가 있으면 여기서부터 stereo correspondence가 틀어진다.
+  \item 수중 실험에서는 이 runner가 실제 센서 동기화를 보장하지 않는다. export 단계에서 left/right frame count, FPS, timestamp 간격을 검증해야 한다.
+\end{codeanalysis}
+
+\codeheading{estimator.cpp:160--194}
+\lstinputlisting[language=C++,firstline=160,lastline=194,firstnumber=160]{third_party/VINS-Fusion/vins_estimator/src/estimator/estimator.cpp}
+\begin{codeanalysis}
+  \item image callback에서 feature tracker 결과가 estimator의 measurement buffer로 들어간다. 이 시점부터 raw image가 아니라 feature observation map이 backend 입력이다.
+  \item 여기서 품질이 낮은 feature가 들어오면 뒤의 PnP, triangulation, Ceres residual이 모두 오염된다. backend에서 해결할 문제가 아니라 frontend gate 문제로 봐야 한다.
+  \item timestamp는 IMU preintegration 구간을 자르는 기준이다. \code{td}나 frame time이 틀리면 visual residual과 IMU residual이 서로 다른 motion을 주장한다.
+\end{codeanalysis}
+
+\codeheading{estimator.cpp:199--205}
+\lstinputlisting[language=C++,firstline=199,lastline=205,firstnumber=199]{third_party/VINS-Fusion/vins_estimator/src/estimator/estimator.cpp}
+\begin{codeanalysis}
+  \item IMU measurement는 image와 별도 buffer로 들어가고, 이후 image timestamp 사이의 IMU sample들이 preintegration에 쓰인다.
+  \item 현재 MP4-only 실험에서는 \code{imu: 0}이면 이 경로가 실제 pose 추정에 기여하지 않는다. 그래서 지금 결과는 엄밀히는 VIO가 아니라 stereo visual odometry에 가깝다.
+  \item 실제 UUV로 넘어가려면 IMU rate, time offset, camera-IMU extrinsic을 이 입력 경로 기준으로 맞춰야 한다.
+\end{codeanalysis}
+
+\section{2단계: Feature tracking frontend}
+
+\begin{definitionbox}{Feature tracking}
+Feature tracking은 한 이미지에서 잡은 점이 다음 이미지의 어디로 이동했는지 찾는 단계다.
+VINS-Fusion의 기본 frontend는 descriptor matching보다 KLT optical flow를 중심으로 한다.
+즉 feature 주변 작은 patch의 밝기 패턴이 다음 frame에서도 비슷하다고 보고 이동량 \(\Delta p\)를 찾는다.
+\end{definitionbox}
+
+\begin{examplebox}{수영장 타일에서 왜 어려운가}
+타일 모서리 하나를 feature로 잡았다고 하자.
+다음 frame에 비슷한 타일 모서리가 여러 개 있으면 KLT는 진짜 같은 점이 아니라 옆 타일의 비슷한 점에 붙을 수 있다.
+그래서 forward-backward check, RANSAC, grid 분산, track lifetime 검사가 필요하다.
+\end{examplebox}
+
+\subsection*{수식}
+
+VINS-Fusion frontend는 descriptor matching이 아니라 KLT optical flow 중심이다.
+feature 주변 patch의 밝기 패턴이 다음 frame에서도 유지된다고 보고 displacement를 찾는다.
+
+\[
+\cstate{\Delta \mathbf{p}^{*}}
+=
+\arg\min_{\cstate{\Delta \mathbf{p}}}
+\sum_{\cparam{\mathbf{q}\in\Omega}}
+\left[
+\cres{\cmeas{I_{k+1}}(\cparam{\mathbf{q}}+\cmeas{\mathbf{p}}+\cstate{\Delta\mathbf{p}})
+- \cmeas{I_k}(\cparam{\mathbf{q}}+\cmeas{\mathbf{p}})}
+\right]^2
+\]
+
+선형화하면 다음 normal equation으로 볼 수 있다.
+
+\[
+\cparam{G}\cstate{\Delta\mathbf{p}}=\cres{\mathbf{b}},
+\qquad
+\cparam{G}=\sum_{\cparam{\mathbf{q}\in\Omega}}
+\begin{bmatrix}
+\cmeas{I_x}^2 & \cmeas{I_x}\cmeas{I_y}\\
+\cmeas{I_x}\cmeas{I_y} & \cmeas{I_y}^2
+\end{bmatrix}
+\]
+
+\subsection*{각 항의 의미}
+
+\begin{tabularx}{\linewidth}{p{0.22\linewidth}Y}
+\toprule
+\textbf{항} & \textbf{의미} \\
+\midrule
+\(\mathbf{p}\) & 이전 frame의 feature 위치. \\
+\(\Delta\mathbf{p}^{*}\) & KLT가 찾는 최적 2D 이동량. \\
+\(\Omega\) & feature 주변 patch window. 코드에서는 \code{cv::Size(21, 21)}. \\
+\(I_k,I_{k+1}\) & 이전/현재 grayscale intensity. \\
+\(G\) & patch gradient matrix. 두 eigenvalue가 모두 충분히 커야 corner로 안정적이다. \\
+\(\lambda_{\min}(G)\) & Shi-Tomasi corner score에 해당하는 값. 작으면 low-texture/edge feature가 된다. \\
+\bottomrule
+\end{tabularx}
+
+\clearpage
+\subsection*{시각적 해석}
+
+\begin{visualblock}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \begin{scope}
+    \node[figlabel, anchor=west] at (0,3.35) {좋은 corner: 깊고 뾰족한 최소점};
+    \draw[grid] (0,0) grid[step=0.5] (5.4,3.0);
+    \draw[->] (0,0) -- (5.7,0) node[right, axislabel] {\(\Delta p\)};
+    \draw[->] (0,0) -- (0,3.25) node[above, axislabel] {patch error};
+    \draw[graphline, accentblue, domain=0.45:5.05, samples=120]
+      plot (\x,{0.32*(\x-3.0)*(\x-3.0)+0.40});
+    \draw[dashed, accentred] (3.0,0) -- (3.0,0.40);
+    \node[axislabel, accentred, anchor=north] at (3.0,-0.12) {\(\Delta p^*\)};
+    \node[note, text width=35mm, anchor=west] at (0.25,2.35)
+      {\(\lambda_{\min}(G)\)가 충분히 크면 KLT가 한 위치로 안정적으로 수렴한다.};
+  \end{scope}
+
+  \begin{scope}[xshift=7.0cm]
+    \node[figlabel, anchor=west] at (0,3.35) {수영장 타일/저텍스처: 얕은 최소점};
+    \draw[grid] (0,0) grid[step=0.5] (5.4,3.0);
+    \draw[->] (0,0) -- (5.7,0) node[right, axislabel] {\(\Delta p\)};
+    \draw[->] (0,0) -- (0,3.25) node[above, axislabel] {patch error};
+    \draw[graphline, accentorange, domain=0.45:5.05, samples=120]
+      plot (\x,{0.07*(\x-2.4)*(\x-2.4)+1.05});
+    \draw[dashed, accentred] (2.4,0) -- (2.4,1.05);
+    \draw[dashed, accentred] (3.4,0) -- (3.4,1.12);
+    \node[axislabel, accentred, align=center] at (3.65,0.55) {비슷한\\후보};
+    \node[note, text width=35mm, anchor=west] at (0.25,2.35)
+      {반복 무늬에서는 다른 타일도 비슷한 error를 만들기 때문에 forward-backward check와 grid selection이 중요하다.};
+  \end{scope}
+\end{tikzpicture}
+\figcaptiontext{KLT는 patch error가 가장 작아지는 이동량을 찾는다. 저텍스처/반복 패턴에서는 error basin이 얕아서 outlier가 쉽게 통과한다.}
+\end{visualblock}
+
+\subsection*{파라미터와 영향}
+
+\small
+\begin{tabularx}{\linewidth}{p{0.18\linewidth}p{0.28\linewidth}p{0.24\linewidth}Y}
+\toprule
+\textbf{파라미터} & \textbf{수식/항과의 관계} & \textbf{작게 하면} & \textbf{크게 하면} \\
+\midrule
+\code{MAX\_CNT} & feature residual 후보 수 \(N\) & constraint 부족, tracking lost 위험. & 정보는 많아지지만 outlier와 계산량 증가. 반복 타일에서 위험. \\
+\code{MIN\_DIST} & 어떤 patch \(\Omega\)를 feature로 선택할지 결정 & feature가 촘촘해지고 한 패턴에 몰림. & feature가 넓게 퍼지지만 저텍스처에서는 개수 부족. \\
+\code{FLOW\_BACK} & \(\norm{\mathbf{p}_{k-1}-\hat{\mathbf{p}}_{k-1}}\) 검증 & 끄면 빠르지만 오추적 통과. & 켜면 느리지만 outlier 감소. \\
+LK window & \(G=\sum_{\Omega}\nabla I\nabla I^\top\)의 영역 & noise/blur에 약함. & 큰 motion에는 강하지만 다른 타일 패턴이 섞일 수 있음. \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\subsection*{수중 영상에서 보는 진단 숫자}
+
+\begin{tabularx}{\linewidth}{p{0.24\linewidth}p{0.22\linewidth}Y}
+\toprule
+\textbf{지표} & \textbf{위험 신호} & \textbf{조치} \\
+\midrule
+tracked feature 수 & 30--50개 이하로 자주 하락 & \code{MAX\_CNT}만 올리지 말고 \code{MIN\_DIST}를 낮추거나 조명/blur/ROI를 먼저 확인한다. \\
+new feature 비율 & 매 frame 새 feature가 대부분 & 기존 track lifetime이 짧다는 뜻이다. \code{FLOW\_BACK} 결과와 motion blur를 확인한다. \\
+같은 타일 영역 집중 & feature가 한 벽면/한 줄 타일에 몰림 & \code{MIN\_DIST} 증가, grid-based mask 강화, low-texture/repeated-pattern rejection 추가. \\
+RANSAC inlier ratio & 0.5 이하로 반복 & threshold를 키우기 전에 correspondence가 반복 타일에 잘못 붙는지 먼저 본다. \\
+\bottomrule
+\end{tabularx}
+
+\clearpage
+\subsection*{RANSAC gate 시각화}
+
+\begin{definitionbox}{RANSAC gate}
+RANSAC gate는 많은 correspondence 중에서 하나의 geometry model을 잘 만족하는 점만 inlier로 남기는 필터다.
+여기서는 fundamental matrix \(F\)가 만드는 epipolar line을 기준으로, 점과 선 사이 거리 \(d_{\text{epi}}\)가 threshold보다 작은 correspondence만 통과시킨다.
+\end{definitionbox}
+
+\begin{examplebox}{타일 오매칭 제거}
+왼쪽 이미지의 한 타일 모서리가 오른쪽 이미지에서 비슷한 다른 타일 모서리에 잘못 붙었다고 하자.
+KLT만 보면 patch가 비슷해서 성공처럼 보일 수 있다.
+하지만 epipolar line에서 멀리 떨어져 있으면 \(d_{\text{epi}}\)가 커지고, RANSAC gate에서 outlier로 제거된다.
+\end{examplebox}
+
+VINS-Fusion 원본의 \code{rejectWithF()}는 epipolar geometry로 outlier를 제거하는 함수지만, 현재 stereo 흐름에서는 호출이 주석 처리되어 있다.
+켜서 사용한다면 핵심 gate는 epipolar line까지의 거리다.
+
+\[
+\cres{d_{\text{epi}}}
+=
+\frac{|\cmeas{\mathbf{x}_2}^\top \cparam{F}\cmeas{\mathbf{x}_1}|}
+{\sqrt{(\cparam{F}\cmeas{\mathbf{x}_1})_1^2+(\cparam{F}\cmeas{\mathbf{x}_1})_2^2}},
+\qquad
+\cres{d_{\text{epi}}} < \cparam{\code{F\_THRESHOLD}}
+\Rightarrow
+\text{inlier}
+\]
+
+\begin{visualblock}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \node[figlabel, anchor=west] at (0.0,7.35) {A. 한 feature가 만드는 epipolar gate};
+
+  \draw[fill=codebg, draw=gridline] (0.0,4.35) rectangle (4.45,6.95);
+  \draw[fill=codebg, draw=gridline] (6.05,4.35) rectangle (10.50,6.95);
+  \node[axislabel, anchor=west] at (0.12,6.72) {frame \(k-1\)};
+  \node[axislabel, anchor=west] at (6.17,6.72) {frame \(k\)};
+
+  \draw[grid] (0.35,4.70) grid[step=0.45] (4.10,6.50);
+  \draw[grid] (6.40,4.70) grid[step=0.45] (10.15,6.50);
+
+  \fill[accentblue] (2.05,5.62) circle (2.3pt);
+  \node[axislabel, accentblue, anchor=south] at (2.05,5.72) {\(\mathbf{x}_1\)};
+  \draw[arrow, accentblue] (2.25,5.62) -- (5.88,5.62);
+  \node[axislabel, accentblue, align=center] at (4.95,5.93) {\(\ell_2=F\mathbf{x}_1\)};
+
+  \path[fill=accentblue!10, draw=none] (6.38,5.08) -- (10.18,6.45) -- (10.18,6.10) -- (6.38,4.73) -- cycle;
+  \draw[graphline, accentblue] (6.38,4.90) -- (10.18,6.28);
+  \draw[dashed, accentblue!70] (6.38,5.08) -- (10.18,6.45);
+  \draw[dashed, accentblue!70] (6.38,4.73) -- (10.18,6.10);
+  \node[axislabel, accentblue, anchor=west] at (8.45,6.48) {epipolar line};
+  \node[axislabel, accentblue, anchor=west] at (6.55,4.50) {gate: \(\pm\code{F\_THRESHOLD}\)};
+
+  \foreach \x/\y in {6.75/5.02,7.25/5.24,7.85/5.42,8.45/5.67,9.10/5.85,9.70/6.10}
+    \fill[accentgreen!85!black] (\x,\y) circle (2.1pt);
+  \foreach \x/\y in {6.95/6.25,8.15/4.82,9.55/5.08}
+    \draw[accentred, line width=0.95pt] (\x-0.08,\y-0.08) -- (\x+0.08,\y+0.08)
+      (\x-0.08,\y+0.08) -- (\x+0.08,\y-0.08);
+
+  \draw[<->, accentred, thick] (8.15,4.82) -- (8.35,5.61);
+  \node[axislabel, accentred, anchor=west] at (8.45,5.15) {\(d_{\text{epi}}\)};
+
+  \node[note, text width=33mm, anchor=west] at (10.90,6.25)
+    {초록 점은 band 안의 inlier, 빨간 점은 KLT가 찾았더라도 \(F\)가 설명하지 못하는 outlier다.};
+  \node[axislabel, text=muted, anchor=west] at (0.05,4.05)
+    {반복 타일에서는 KLT score가 좋아도 \(d_{\text{epi}}\)가 커질 수 있으므로, 이 gate가 backend로 들어갈 correspondence를 한 번 더 거른다.};
+
+  \node[figlabel, anchor=west] at (0.0,2.95) {B. residual을 threshold로 자르는 방식};
+  \draw[->] (0.35,0.95) -- (6.20,0.95) node[right, axislabel] {\(d_{\text{epi}}\)};
+  \draw[->] (0.35,0.95) -- (0.35,2.35) node[above, axislabel] {count};
+  \draw[accentgreen!80!black, fill=stagegreen] (0.75,0.95) rectangle (1.05,1.85);
+  \draw[accentgreen!80!black, fill=stagegreen] (1.12,0.95) rectangle (1.42,2.10);
+  \draw[accentgreen!80!black, fill=stagegreen] (1.49,0.95) rectangle (1.79,2.25);
+  \draw[accentgreen!80!black, fill=stagegreen] (1.86,0.95) rectangle (2.16,2.00);
+  \draw[accentgreen!80!black, fill=stagegreen] (2.23,0.95) rectangle (2.53,1.55);
+  \draw[accentred!80!black, fill=stagered] (2.90,0.95) rectangle (3.20,1.40);
+  \draw[accentred!80!black, fill=stagered] (3.35,0.95) rectangle (3.65,1.25);
+  \draw[accentred!80!black, fill=stagered] (3.95,0.95) rectangle (4.25,1.15);
+  \draw[accentred!80!black, fill=stagered] (4.70,0.95) rectangle (5.00,1.05);
+  \draw[dashed, accentorange, very thick] (2.68,0.75) -- (2.68,2.35);
+  \node[axislabel, accentorange, anchor=south] at (2.68,2.35) {\code{F\_THRESHOLD}};
+  \node[axislabel, accentgreen!55!black] at (1.65,0.55) {inlier};
+  \node[axislabel, accentred] at (4.15,0.55) {outlier};
+
+  \node[figlabel, anchor=west] at (7.20,2.95) {C. threshold 대소에 따른 결과};
+  \draw[fill=stagered, draw=accentred!70!black, rounded corners=1pt] (7.20,2.25) rectangle (13.15,2.75);
+  \node[axislabel, anchor=west] at (7.35,2.51) {너무 작음: 정상점 reject \(\rightarrow\) track 부족};
+  \draw[fill=stagegreen, draw=accentgreen!70!black, rounded corners=1pt] (7.20,1.55) rectangle (13.15,2.05);
+  \node[axislabel, anchor=west] at (7.35,1.81) {적절함: geometry inlier만 backend 전달};
+  \draw[fill=stageorange, draw=accentorange!75!black, rounded corners=1pt] (7.20,0.85) rectangle (13.15,1.35);
+  \node[axislabel, anchor=west] at (7.35,1.11) {너무 큼: 반복 타일 outlier 통과 \(\rightarrow\) pose jump};
+
+  \node[note, text width=59mm, anchor=west] at (7.20,-0.02)
+    {따라서 inlier 개수가 많다고 항상 좋은 것이 아니다. \code{F\_THRESHOLD}는 feature를 많이 살리는 파라미터가 아니라, \(\mathbf{x}_2^\top F\mathbf{x}_1=0\) 모델을 얼마나 엄격하게 적용할지 정하는 gate다.};
+\end{tikzpicture}
+\figcaptiontext{RANSAC gate의 실제 의미. \(F\)가 만든 epipolar line 주변의 band 안에 들어오는 correspondence만 inlier가 된다. threshold는 residual histogram을 자르는 기준이며, 작으면 정상점 손실, 크면 outlier 통과가 생긴다.}
+\end{visualblock}
+
+\subsection*{실제 코드}
+
+\readpoint{여기서 실제 KLT 추적, track status filtering, forward-backward check가 한 번에 보인다.}
+\codeheading{feature\_tracker.cpp:120--149}
+\lstinputlisting[language=C++,firstline=120,lastline=149,firstnumber=120]{third_party/VINS-Fusion/vins_estimator/src/featureTracker/feature_tracker.cpp}
+\begin{codeanalysis}
+  \item 핵심은 \code{calcOpticalFlowPyrLK}다. 이전 frame의 \code{cur\_pts}를 다음 frame으로 이동시키며 \(\Delta p^*\)를 수치적으로 찾는다.
+  \item \code{status} filtering은 KLT가 실패한 점을 제거한다. 이 단계에서 살아남은 점만 이후 visual residual 후보가 된다.
+  \item \code{FLOW\_BACK}이 켜지면 현재 frame에서 다시 이전 frame으로 역추적한다. 왕복 위치가 다르면 반복 타일에 잘못 붙은 점일 가능성이 커서 제거한다.
+  \item 수영장 타일 환경에서는 이 블록이 가장 중요하다. feature 개수를 늘리는 것보다 왕복 오차와 track lifetime을 먼저 봐야 한다.
+\end{codeanalysis}
+
+\codeheading{feature\_tracker.cpp:167--184}
+\lstinputlisting[language=C++,firstline=167,lastline=184,firstnumber=167]{third_party/VINS-Fusion/vins_estimator/src/featureTracker/feature_tracker.cpp}
+\begin{codeanalysis}
+  \item \code{setMask()} 이후 새 feature를 뽑기 때문에, 이미 존재하는 feature 주변에는 새 점이 과하게 몰리지 않는다. 이것이 grid-based selection과 비슷한 역할을 한다.
+  \item \code{MAX\_CNT - cur\_pts.size()}만큼 부족한 feature를 새로 채운다. 따라서 \code{MAX\_CNT}는 항상 feature를 많이 쓰겠다는 뜻이 아니라 ``부족하면 보충할 상한''이다.
+  \item \code{MIN\_DIST}가 작으면 같은 타일 줄에 feature가 몰릴 수 있고, 크면 저텍스처 구간에서 feature가 부족해진다. 수중에서는 이 값을 단독으로 보지 말고 feature 분포 이미지를 같이 봐야 한다.
+\end{codeanalysis}
+
+\codeheading{feature\_tracker.cpp:326--331}
+\lstinputlisting[language=C++,firstline=326,lastline=331,firstnumber=326]{third_party/VINS-Fusion/vins_estimator/src/featureTracker/feature_tracker.cpp}
+\begin{codeanalysis}
+  \item 이 함수는 \code{findFundamentalMat(..., cv::FM\_RANSAC, F\_THRESHOLD, 0.99)}로 epipolar geometry outlier를 제거한다.
+  \item 중요한 점은 현재 실험 경로에서 이 함수 호출이 꺼져 있다는 것이다. 그래서 YAML의 \code{F\_threshold}를 바꿔도 실제 tracking 결과가 바로 바뀌지 않을 수 있다.
+  \item RANSAC을 켜면 repeated pattern mismatch를 줄일 수 있지만, blur와 굴절 때문에 정상 대응점도 reject될 수 있다. inlier ratio와 RViz path jump를 같이 봐야 한다.
+\end{codeanalysis}
+
+\section{3단계: Stereo depth와 triangulation}
+
+\begin{definitionbox}{Stereo depth}
+Stereo depth는 왼쪽 camera와 오른쪽 camera에서 같은 feature가 보이는 위치 차이, 즉 disparity \(d\)로 깊이 \(Z\)를 계산하는 방법이다.
+두 camera 사이 baseline \(b\)와 focal length \(f_x\)를 알고 있으면 \(Z=f_xb/d\)로 거리를 추정할 수 있다.
+\end{definitionbox}
+
+\begin{examplebox}{disparity 1 pixel 오차의 의미}
+가까운 점은 disparity가 커서 1 pixel 오차가 depth에 작게 반영된다.
+먼 벽면은 disparity가 작기 때문에 같은 1 pixel 오차가 큰 depth 오차로 증폭된다.
+수영장 벽처럼 멀고 반복적인 texture는 stereo depth가 가장 흔들리기 쉬운 대상이다.
+\end{examplebox}
+
+\subsection*{수식}
+
+rectified stereo의 직관적인 depth 식은 다음이다.
+
+\[
+\cmeas{d}=\cmeas{u_L}-\cmeas{u_R},
+\qquad
+\cstate{Z}=\frac{\cparam{f_x}\cparam{b}}{\cmeas{d}}
+\]
+
+disparity 오차가 depth 오차로 전파되는 근사는 다음이다.
+
+\[
+\cres{\sigma_Z}
+\approx
+\left|\frac{\partial \cstate{Z}}{\partial \cmeas{d}}\right|\cres{\sigma_d}
+=
+\frac{\cparam{f_x}\cparam{b}}{\cmeas{d}^2}\cres{\sigma_d}
+\]
+
+VINS-Fusion 내부에서는 일반적인 두 projection matrix로 DLT triangulation을 수행한다.
+
+\[
+\cparam{A}\cstate{\mathbf{X}}=0,
+\qquad
+\cstate{\mathbf{X}^{*}}=\arg\min_{\norm{\cstate{\mathbf{X}}}=1}\norm{\cparam{A}\cstate{\mathbf{X}}}
+\]
+
+\subsection*{각 항의 의미}
+
+\begin{tabularx}{\linewidth}{p{0.18\linewidth}Y}
+\toprule
+\textbf{항} & \textbf{의미} \\
+\midrule
+\(u_L,u_R\) & left/right image에서 같은 feature의 x 좌표. \\
+\(d\) & disparity. 작을수록 먼 점이고 depth 오차가 커진다. \\
+\(f_x\) & x축 focal length. resize와 calibration에 따라 달라진다. \\
+\(b\) & stereo baseline. metric scale을 결정한다. \\
+\(Z\) & camera 기준 feature depth. backend에서는 inverse depth \(\lambda=1/Z\)로 자주 사용. \\
+\(A,\mathbf{X}\) & DLT triangulation 행렬과 homogeneous 3D point. \\
+\bottomrule
+\end{tabularx}
+
+\clearpage
+\subsection*{민감도 그래프}
+
+\begin{visualblock}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \begin{scope}
+    \node[figlabel, anchor=west] at (0,3.55) {Depth scale: \(Z=f_xb/d\)};
+    \draw[grid] (0,0) grid[step=0.5] (5.5,3.0);
+    \draw[->] (0,0) -- (5.8,0) node[right, axislabel] {\(d\)};
+    \draw[->] (0,0) -- (0,3.18) node[above left, axislabel] {\(Z\)};
+    \foreach \x/\lab in {0.9/2,2.1/5,3.3/10,4.5/20}
+      \draw[grid] (\x,0) -- (\x,-0.06) node[below, axislabel] {\lab px};
+    \draw[graphline, accentblue, domain=0.72:5.15, samples=140]
+      plot (\x,{2.35/(\x+0.22)});
+    \node[axislabel, accentblue, anchor=west] at (3.25,1.15) {\(1/d\)};
+    \fill[accentred] (0.9,{2.35/(0.9+0.22)}) circle (1.5pt);
+    \fill[accentgreen] (4.5,{2.35/(4.5+0.22)}) circle (1.5pt);
+  \end{scope}
+
+  \begin{scope}[xshift=7.0cm]
+    \node[figlabel, anchor=west] at (0,3.55) {Error propagation: \(\sigma_Z\approx f_xb\sigma_d/d^2\)};
+    \draw[grid] (0,0) grid[step=0.5] (5.5,3.0);
+    \draw[->] (0,0) -- (5.8,0) node[right, axislabel] {\(d\)};
+    \draw[->] (0,0) -- (0,3.18) node[above left, axislabel] {\(\sigma_Z\)};
+    \foreach \x/\lab in {0.9/2,2.1/5,3.3/10,4.5/20}
+      \draw[grid] (\x,0) -- (\x,-0.06) node[below, axislabel] {\lab px};
+    \draw[graphline, accentred, domain=0.80:5.15, samples=140]
+      plot (\x,{2.15/((\x+0.08)*(\x+0.08))});
+    \node[note, text width=35mm, anchor=west] at (0.35,2.25)
+      {먼 feature는 \(d\)가 작아져서 같은 1 pixel matching error도 depth error를 크게 만든다.};
+  \end{scope}
+\end{tikzpicture}
+\figcaptiontext{stereo는 가까운 점보다 먼 점에서 훨씬 불안정하다. 수중에서 calibration과 right-left matching 품질을 먼저 검증해야 하는 이유다.}
+\end{visualblock}
+
+\subsection*{파라미터와 영향}
+
+\begin{tabularx}{\linewidth}{p{0.18\linewidth}p{0.28\linewidth}p{0.24\linewidth}Y}
+\toprule
+\textbf{파라미터} & \textbf{수식항 관계} & \textbf{작게 하면} & \textbf{크게 하면} \\
+\midrule
+\code{baseline} \(b\) & \(Z\)에 선형으로 곱해짐 & depth/trajectory scale이 작아짐. & depth/trajectory scale이 커짐. 실제보다 크게 넣으면 경로가 부풀어 보임. \\
+\code{fx} & \(Z\)에 선형으로 곱해짐 & depth가 작아지고 scale 축소. & depth가 커지고 scale 확대. \\
+disparity \(d\) & \(Z\)의 분모 & 작은 \(d\)는 먼 점. 작은 pixel 오차가 큰 depth 오차로 증폭. & 가까운 점은 depth가 안정적이지만 occlusion 가능성 증가. \\
+\code{resize\_width} & pixel 좌표와 intrinsic 단위 변경 & 빠르지만 disparity 정밀도 감소. & 정밀도는 좋아지지만 처리량 증가. intrinsic도 같이 scaling해야 함. \\
+\bottomrule
+\end{tabularx}
+
+\subsection*{현재 config로 보는 depth 오차 예시}
+
+현재 생성된 pinhole config는 \(f_x=525.76\), baseline은 \(b=0.05\) m로 들어가 있다.
+이 값이 정확한 수중 calibration이라는 뜻은 아니고, stereo depth 민감도를 보는 기준값이다.
+
+\[
+\cstate{Z}=\frac{\cparam{525.76}\cdot\cparam{0.05}}{\cmeas{d}},
+\qquad
+\cres{\sigma_Z}\approx
+\frac{\cparam{525.76}\cdot\cparam{0.05}}{\cmeas{d}^2}\cres{\sigma_d}
+\]
+
+\begin{tabularx}{\linewidth}{p{0.18\linewidth}p{0.22\linewidth}p{0.26\linewidth}Y}
+\toprule
+\textbf{disparity \(d\)} & \textbf{depth \(Z\)} & \textbf{\(\sigma_d=0.5\) px일 때} & \textbf{해석} \\
+\midrule
+5 px & 약 5.26 m & \(\sigma_Z\approx 0.53\) m & 먼 벽/타일 feature는 depth scale이 크게 흔들린다. \\
+10 px & 약 2.63 m & \(\sigma_Z\approx 0.13\) m & 중거리 feature. calibration 오차 영향도 같이 확인해야 한다. \\
+20 px & 약 1.31 m & \(\sigma_Z\approx 0.03\) m & 가까운 feature는 depth가 안정적이지만 occlusion과 matching 실패를 본다. \\
+\bottomrule
+\end{tabularx}
+
+\subsection*{실제 코드}
+
+\readpoint{left image에서 찾은 feature를 right image로 다시 KLT 추적해서 stereo correspondence를 만든다.}
+\codeheading{feature\_tracker.cpp:216--221}
+\lstinputlisting[language=C++,firstline=216,lastline=221,firstnumber=216]{third_party/VINS-Fusion/vins_estimator/src/featureTracker/feature_tracker.cpp}
+\begin{codeanalysis}
+  \item temporal tracking이 아니라 left-right stereo matching이다. 같은 시간의 왼쪽 feature를 오른쪽 이미지에서 찾는다.
+  \item 이 대응점으로 disparity \(d=u_L-u_R\)가 만들어지고, 결국 \(Z=f_xb/d\)의 depth scale이 정해진다.
+  \item 수중에서는 굴절과 카메라 하우징 때문에 공기 중 calibration을 그대로 쓰면 이 matching이 맞아 보여도 metric depth가 틀릴 수 있다.
+\end{codeanalysis}
+
+\codeheading{feature\_manager.cpp:198--212}
+\lstinputlisting[language=C++,firstline=198,lastline=212,firstnumber=198]{third_party/VINS-Fusion/vins_estimator/src/estimator/feature_manager.cpp}
+\begin{codeanalysis}
+  \item 여러 camera pose와 image observation으로 선형 행렬 \(A\)를 만들고 SVD로 homogeneous 3D point를 구한다. 문서의 \(A\mathbf{X}=0\)에 해당한다.
+  \item 이 코드는 feature가 어느 3D 위치에 있는지 초기값을 만든다. 초기 depth가 나쁘면 inverse depth 최적화도 잘못된 곳에서 시작한다.
+  \item 반복 타일에서는 2D 대응이 잘못되어도 삼각측량 자체는 어떤 3D 점을 만들어낸다. 그래서 triangulation 전 correspondence filtering이 필요하다.
+\end{codeanalysis}
+
+\codeheading{feature\_manager.cpp:302--340}
+\lstinputlisting[language=C++,firstline=302,lastline=340,firstnumber=302]{third_party/VINS-Fusion/vins_estimator/src/estimator/feature_manager.cpp}
+\begin{codeanalysis}
+  \item stereo observation이 있으면 두 camera 사이의 baseline으로 depth를 초기화한다. 이 값이 backend의 \(\lambda=1/Z\) 초기값이 된다.
+  \item depth가 음수이거나 너무 불안정하면 feature는 좋은 landmark가 아니다. 수중에서는 먼 벽면 feature가 작은 disparity 때문에 특히 흔들린다.
+  \item 여기서 쓰는 camera extrinsic과 projection matrix가 실제 수중 stereo calibration과 맞아야 한다. 그렇지 않으면 RViz 경로 scale이 부풀거나 줄어든다.
+\end{codeanalysis}
+
+\section{4단계: Feature manager와 keyframe/parallax}
+
+\begin{definitionbox}{Parallax와 keyframe}
+Parallax는 같은 3D 점이 서로 다른 frame에서 얼마나 다른 위치로 보이는지를 뜻한다.
+parallax가 충분해야 triangulation으로 depth를 안정적으로 만들 수 있다.
+Keyframe은 backend window 안에 남겨둘 만큼 geometry 정보가 좋은 frame이다.
+\end{definitionbox}
+
+\begin{examplebox}{앞으로 이동 vs 벽을 정면으로 보기}
+UUV가 옆으로 움직이며 부표를 보면 feature 위치가 크게 바뀌어 parallax가 생긴다.
+반대로 타일 벽을 거의 정면으로 보며 천천히 전진하면 이미지 변화가 작아 parallax가 부족할 수 있다.
+이 경우 feature 수는 많아도 depth와 pose constraint는 약할 수 있다.
+\end{examplebox}
+
+\subsection*{수식}
+
+VINS는 같은 feature가 frame 사이에서 얼마나 이동했는지 평균 parallax를 계산한다.
+
+\[
+\cres{\bar{p}}
+=
+\frac{1}{\cparam{N}}
+\sum_{j=1}^{\cparam{N}}
+\norm{\cmeas{\mathbf{z}^{j}_{k-1}}-\cmeas{\mathbf{z}^{j}_{k-2}}}
+\]
+
+\subsection*{각 항의 의미}
+
+\begin{tabularx}{\linewidth}{p{0.22\linewidth}Y}
+\toprule
+\textbf{항} & \textbf{의미} \\
+\midrule
+\(\bar{p}\) & 평균 parallax. keyframe 판단의 핵심 값. \\
+\(N\) & parallax 계산에 사용된 공통 feature track 수. \\
+\(\mathbf{z}^{j}_{k-1},\mathbf{z}^{j}_{k-2}\) & 같은 feature \(j\)의 normalized image coordinate. \\
+\code{MIN\_PARALLAX} & keyframe으로 인정할 최소 평균 parallax. \code{keyframe\_parallax / FOCAL\_LENGTH}. \\
+\bottomrule
+\end{tabularx}
+
+\clearpage
+\subsection*{threshold와 keyframe 수}
+
+\begin{visualblock}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \draw[grid] (0,0) grid[step=0.5] (8.2,3.6);
+  \draw[->] (0,0) -- (8.55,0) node[right, axislabel] {\code{keyframe\_parallax}};
+  \draw[->] (0,0) -- (0,3.95) node[above, axislabel] {keyframe rate};
+  \fill[accentred!10] (0.15,0.05) rectangle (2.45,3.55);
+  \fill[accentgreen!10] (2.45,0.05) rectangle (5.35,3.55);
+  \fill[accentorange!12] (5.35,0.05) rectangle (8.10,3.55);
+  \draw[graphline, accentblue]
+    (0.35,3.35) .. controls (1.45,3.20) and (2.40,2.75) .. (3.60,2.05)
+    .. controls (5.15,1.18) and (6.70,0.62) .. (7.90,0.35);
+  \draw[dashed, accentgreen] (2.45,0) -- (2.45,3.55);
+  \draw[dashed, accentgreen] (5.35,0) -- (5.35,3.55);
+  \node[figlabel, align=center, text=accentred] at (1.30,3.15) {너무 작음\\중복 keyframe};
+  \node[figlabel, align=center, text=accentgreen!55!black] at (3.90,3.15) {권장 시작 구간\\track/depth 확인};
+  \node[figlabel, align=center, text=accentorange!80!black] at (6.75,3.15) {너무 큼\\초기화 약화};
+  \node[note, text width=42mm, anchor=west] at (0.35,0.55)
+    {\(\bar{p}\)가 threshold보다 작으면 frame 간 baseline이 부족하다. 이때는 오래된 frame을 버리는 방식이 달라지고 triangulation 품질도 같이 흔들린다.};
+\end{tikzpicture}
+\figcaptiontext{\code{keyframe\_parallax}는 속도 파라미터가 아니라 geometry 품질 파라미터다. 작게 잡으면 계산량이 늘고, 크게 잡으면 depth/초기화가 약해진다.}
+\end{visualblock}
+
+\subsection*{파라미터와 영향}
+
+\small
+\begin{tabularx}{\linewidth}{p{0.20\linewidth}p{0.27\linewidth}p{0.24\linewidth}Y}
+\toprule
+\textbf{파라미터/조건} & \textbf{수식항 관계} & \textbf{작게/부족하면} & \textbf{크게/많으면} \\
+\midrule
+\code{keyframe\_parallax} & \(\bar{p}\ge \code{MIN\_PARALLAX}\) threshold & keyframe이 많아져 계산량 증가, 비슷한 frame이 window를 채움. & keyframe이 적어져 triangulation/초기화가 약해질 수 있음. \\
+\code{last\_track\_num} & 공통 feature 수 \(N\) & parallax 통계 불안정, tracking 품질 나쁨. & 통계 안정. 단, 반복 타일 outlier인지 확인 필요. \\
+\code{long\_track\_num} & feature lifetime & track이 짧아 pose constraint가 약함. & 장기 constraint에 유리. 잘못 붙은 track이면 위험. \\
+\code{new\_feature\_num} & 새 feature 비율 & 너무 적으면 저텍스처/blur. & 너무 많으면 기존 track이 자주 끊긴다는 뜻. \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\subsection*{실제 코드}
+
+\readpoint{feature manager가 새 frame을 keyframe으로 볼지 판단하고, 그 결과가 marginalization 방향으로 이어진다.}
+\codeheading{estimator.cpp:270--319}
+\lstinputlisting[language=C++,firstline=270,lastline=319,firstnumber=270]{third_party/VINS-Fusion/vins_estimator/src/estimator/estimator.cpp}
+\begin{codeanalysis}
+  \item image measurement가 들어오면 feature manager에 추가되고, 현재 frame을 keyframe으로 유지할지 판단한다.
+  \item 이 판단은 단순 frame count가 아니라 parallax와 track 상태를 본다. 그래서 느리게 움직이거나 벽면만 보는 구간에서는 keyframe 선택이 약해질 수 있다.
+  \item 수중 UUV에서 같은 타일 벽을 평행하게 보면 parallax가 작아 depth가 약해진다. 이때 path가 정지하거나 갑자기 튈 수 있다.
+\end{codeanalysis}
+
+\codeheading{estimator.cpp:411--426}
+\lstinputlisting[language=C++,firstline=411,lastline=426,firstnumber=411]{third_party/VINS-Fusion/vins_estimator/src/estimator/estimator.cpp}
+\begin{codeanalysis}
+  \item \code{MARGIN\_OLD}와 \code{MARGIN\_SECOND\_NEW}는 sliding window에서 어떤 frame을 제거할지 정한다.
+  \item keyframe으로 볼 만큼 parallax가 있으면 오래된 frame을 밀어내고, parallax가 부족하면 최근 frame 쪽을 제거해 window의 geometry를 유지하려 한다.
+  \item \code{keyframe\_parallax}를 너무 작게 잡으면 비슷한 frame이 window를 채우고, 너무 크게 잡으면 필요한 keyframe이 남지 않는다.
+\end{codeanalysis}
+
+\codeheading{feature\_manager.cpp:52--118}
+\lstinputlisting[language=C++,firstline=52,lastline=118,firstnumber=52]{third_party/VINS-Fusion/vins_estimator/src/estimator/feature_manager.cpp}
+\begin{codeanalysis}
+  \item 새 feature, 오래 추적된 feature, 공통 track 수를 세면서 frontend 품질을 요약한다. 이 값들은 수중 실험 로그에서 반드시 봐야 하는 진단 지표다.
+  \item 평균 parallax는 normalized coordinate 기준이다. pixel threshold와 focal length가 연결되므로, resize를 바꾸면 같은 threshold가 같은 의미가 아니다.
+  \item 반복 패턴에서 잘못 붙은 long track은 오히려 위험하다. track이 길다는 사실만 보지 말고 forward-backward error와 reprojection residual을 같이 봐야 한다.
+\end{codeanalysis}
+
+\section{5단계: IMU preintegration}
+
+\begin{definitionbox}{IMU preintegration}
+IMU는 camera frame보다 훨씬 빠르게 accelerometer와 gyroscope 값을 낸다.
+Preintegration은 두 camera frame 사이에 들어온 많은 IMU sample을 하나의 상대 motion factor로 압축하는 과정이다.
+이렇게 해야 backend가 모든 IMU sample을 직접 최적화하지 않고도 motion prior를 사용할 수 있다.
+\end{definitionbox}
+
+\begin{examplebox}{10 Hz camera와 200 Hz IMU}
+camera가 0.1초마다 한 장씩 들어오고 IMU가 0.005초마다 들어오면, camera frame 두 개 사이에 IMU sample이 약 20개 있다.
+preintegration은 이 20개를 모아 ``이 0.1초 동안 대략 이만큼 회전하고 이동했다''는 하나의 residual로 만든다.
+\end{examplebox}
+
+\subsection*{수식}
+
+camera frame \(i\)와 \(j\) 사이의 많은 IMU sample을 하나의 factor로 압축한다.
+
+\[
+\cstate{\Delta R_{ij}}
+\approx
+\prod_{k=i}^{j-1}
+\exp\left((\cmeas{\boldsymbol{\omega}_k}-\cstate{\mathbf{b}_g})\cparam{\Delta t}\right)
+\]
+
+\[
+\cstate{\Delta \mathbf{v}_{ij}}
+\approx
+\sum_{k=i}^{j-1}
+\cstate{R_i^\top}
+\left(
+\cstate{R_k}(\cmeas{\mathbf{a}_k}-\cstate{\mathbf{b}_a})-\cparam{\mathbf{g}}
+\right)\cparam{\Delta t}
+\]
+
+\[
+\cstate{\mathbf{x}_i}=
+\left[
+\cstate{\mathbf{p}_i},\cstate{\mathbf{q}_i},\cstate{\mathbf{v}_i},\cstate{\mathbf{b}_{a_i}},\cstate{\mathbf{b}_{g_i}}
+\right]
+\]
+
+\subsection*{각 항의 의미}
+
+\begin{tabularx}{\linewidth}{p{0.22\linewidth}Y}
+\toprule
+\textbf{항} & \textbf{의미} \\
+\midrule
+\(\Delta R_{ij}\), \(\Delta\mathbf{v}_{ij}\) & IMU가 예측한 frame \(i\rightarrow j\) 상대 회전/속도 변화. \\
+\(\boldsymbol{\omega}_k\), \(\mathbf{a}_k\) & gyro와 accelerometer measurement. \\
+\(\mathbf{b}_g,\mathbf{b}_a\) & gyro/accelerometer bias. \\
+\(\Delta t\) & IMU sample 간 시간 간격. timestamp 품질에 민감. \\
+\(\mathbf{g}\) & gravity vector. 초기 alignment와 velocity 추정에 중요. \\
+\(\mathbf{x}_i\) & pose, velocity, IMU bias를 포함한 VIO 상태. \\
+\bottomrule
+\end{tabularx}
+
+\subsection*{파라미터와 영향}
+
+\small
+\begin{tabularx}{\linewidth}{p{0.16\linewidth}p{0.28\linewidth}p{0.26\linewidth}Y}
+\toprule
+\textbf{파라미터} & \textbf{수식항 관계} & \textbf{작게 하면} & \textbf{크게 하면} \\
+\midrule
+\code{acc\_n} & accel residual covariance & IMU 가속도를 과신. 영상과 충돌 가능. & IMU를 덜 믿어 feature 부족 구간 보완 약화. \\
+\code{gyr\_n} & gyro residual covariance & 회전을 과신. gyro noise/bias에 취약. & 빠른 회전에서 vision 의존도 증가. \\
+\code{acc\_w} & accel bias random walk & bias drift를 못 따라감. & bias가 motion까지 흡수할 수 있음. \\
+\code{gyr\_w} & gyro bias random walk & yaw/rotation drift를 못 따라감. & bias 추정이 과하게 흔들림. \\
+\code{td} & camera-IMU time offset & 대소보다 정확성이 중요. 틀리면 visual/IMU residual 충돌. & 동일. 빠른 motion에서 더 민감. \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+현재 MP4 실험은 \code{imu: 0}이라 이 factor가 꺼져 있다.
+UUV VIO-SLAM에서는 \code{imu: 1}, camera-IMU extrinsic, time offset, noise parameter를 반드시 맞춰야 한다.
+
+\subsection*{실제 코드}
+
+\readpoint{IMU sample이 들어올 때마다 preintegration과 임시 propagation이 동시에 갱신된다.}
+\codeheading{estimator.cpp:375--405}
+\lstinputlisting[language=C++,firstline=375,lastline=405,firstnumber=375]{third_party/VINS-Fusion/vins_estimator/src/estimator/estimator.cpp}
+\begin{codeanalysis}
+  \item IMU sample 사이의 \(\Delta t\)를 계산하고, acceleration/gyro를 preintegration에 누적한다.
+  \item 동시에 현재 pose/velocity를 임시로 propagation한다. 이 값은 image가 들어오기 전 motion prior처럼 쓰인다.
+  \item \(\Delta t\)가 틀리면 \(\Delta R,\Delta v,\Delta p\)가 모두 틀어진다. 수중 로봇에서 ROS timestamp와 camera timestamp sync가 중요한 이유다.
+\end{codeanalysis}
+
+\codeheading{integration\_base.h:139--194}
+\lstinputlisting[language=C++,firstline=139,lastline=194,firstnumber=139]{third_party/VINS-Fusion/vins_estimator/src/factor/integration_base.h}
+\begin{codeanalysis}
+  \item 이 코드는 preintegration residual과 Jacobian을 만든다. 즉 IMU raw sample 여러 개를 하나의 factor \(\mathbf{r}_{imu}\)로 압축한다.
+  \item bias \(\mathbf{b}_a,\mathbf{b}_g\)에 대한 보정항이 들어간다. bias를 상태로 추정하기 때문에 IMU가 시간이 지나며 조금씩 변하는 것을 모델링할 수 있다.
+  \item \code{acc\_n/gyr\_n}은 residual covariance에 연결된다. 너무 작게 잡으면 IMU를 과신하고, 너무 크게 잡으면 feature가 부족한 구간에서 IMU 도움을 못 받는다.
+\end{codeanalysis}
+
+\codeheading{imu\_factor.h:21--75}
+\lstinputlisting[language=C++,firstline=21,lastline=75,firstnumber=21]{third_party/VINS-Fusion/vins_estimator/src/factor/imu_factor.h}
+\begin{codeanalysis}
+  \item Ceres가 호출하는 IMU residual factor다. 두 frame의 pose, velocity, bias를 받아 preintegration 예측과 실제 상태 차이를 residual로 계산한다.
+  \item visual factor가 image plane error를 줄인다면, IMU factor는 frame 사이 motion이 accelerometer/gyro와 일치하도록 묶는다.
+  \item UUV에서는 회전이 빠르거나 영상 feature가 끊기는 순간에 이 factor가 중요하다. 단, extrinsic/time offset이 틀리면 IMU가 오히려 pose를 잘못 끌고 간다.
+\end{codeanalysis}
+
+\section{6단계: Initialization}
+
+\begin{definitionbox}{Initialization}
+Initialization은 nonlinear optimization을 시작하기 위한 첫 pose, depth, velocity, bias 추정값을 만드는 과정이다.
+초기값이 너무 틀리면 Ceres가 아무리 최적화해도 잘못된 local minimum에 빠질 수 있다.
+\end{definitionbox}
+
+\begin{examplebox}{PnP가 하는 일}
+이미 depth를 아는 feature 10개가 있고, 현재 이미지에서 그 feature들이 보이는 2D 위치를 안다고 하자.
+PnP는 ``이 3D 점들이 현재 이미지에 이렇게 보이려면 camera pose가 어디여야 하는가?''를 푸는 문제다.
+\end{examplebox}
+
+\subsection*{수식}
+
+stereo depth로 얻은 3D point와 현재 frame의 2D 관측을 이용해 PnP로 초기 pose를 만든다.
+
+\[
+\min_{\cstate{R,t}}
+\sum_j
+\norm{\cres{\pi(\cstate{R}\cstate{\mathbf{X}_j}+\cstate{t})-\cmeas{\mathbf{z}_j}}}^2
+\]
+
+\subsection*{각 항의 의미}
+
+\begin{tabularx}{\linewidth}{p{0.18\linewidth}Y}
+\toprule
+\textbf{항} & \textbf{의미} \\
+\midrule
+\(R,t\) & 현재 frame pose. PnP가 추정하는 회전과 이동. \\
+\(\mathbf{X}_j\) & 이미 depth가 있는 3D feature point. \\
+\(\mathbf{z}_j\) & 현재 frame의 2D normalized feature coordinate. \\
+\(\pi(\cdot)\) & 3D point를 image plane으로 projection하는 함수. \\
+\(\pi(R\mathbf{X}_j+t)-\mathbf{z}_j\) & reprojection error. \\
+\bottomrule
+\end{tabularx}
+
+\subsection*{파라미터와 영향}
+
+\begin{tabularx}{\linewidth}{p{0.22\linewidth}p{0.27\linewidth}p{0.23\linewidth}Y}
+\toprule
+\textbf{항목} & \textbf{수식항 관계} & \textbf{부족/작으면} & \textbf{과함/크면} \\
+\midrule
+3D-2D correspondence 수 & \(\sum_j\)의 항 개수 & 4개 미만이면 PnP 실패. 적을수록 불안정. & 많으면 안정적이나 outlier가 섞이면 pose가 망가짐. \\
+depth 품질 & \(\mathbf{X}_j\) & scale과 pose 초기값이 틀어짐. & 정확성이 중요. 값 자체가 많아도 calibration이 틀리면 의미 없음. \\
+\code{keyframe\_parallax} & 좋은 \(\mathbf{X}_j\) 생성 조건 & 작은 motion에서도 초기화해 depth가 약함. & 초기화가 늦거나 실패할 수 있음. \\
+\bottomrule
+\end{tabularx}
+
+\subsection*{실제 코드}
+
+\readpoint{이미 depth가 있는 feature를 3D point로 쓰고, 현재 frame의 2D 관측과 맞춰 pose 초기값을 만든다.}
+\codeheading{feature\_manager.cpp:215--238}
+\lstinputlisting[language=C++,firstline=215,lastline=238,firstnumber=215]{third_party/VINS-Fusion/vins_estimator/src/estimator/feature_manager.cpp}
+\begin{codeanalysis}
+  \item \code{solvePnP}는 depth가 있는 3D landmark와 현재 2D feature를 맞춰 camera pose 초기값을 계산한다.
+  \item 이 pose는 Ceres 최적화의 출발점이다. 초기값이 너무 나쁘면 nonlinear optimization이 올바른 최소점으로 가지 못한다.
+  \item 수중에서는 depth가 불안정한 feature를 PnP에 넣는 것이 위험하다. 특히 먼 타일 벽 feature는 disparity error가 pose 초기값을 크게 흔든다.
+\end{codeanalysis}
+
+\codeheading{feature\_manager.cpp:259--300}
+\lstinputlisting[language=C++,firstline=259,lastline=300,firstnumber=259]{third_party/VINS-Fusion/vins_estimator/src/estimator/feature_manager.cpp}
+\begin{codeanalysis}
+  \item PnP에 넣을 3D-2D correspondence를 수집한다. feature가 여러 frame에서 관측되고 depth가 있어야 후보가 된다.
+  \item correspondence 개수가 적으면 PnP가 불안정하고, 많아도 outlier가 섞이면 pose가 틀어진다. 그래서 frontend filtering과 depth 검증이 선행 조건이다.
+  \item 수영장 환경에서는 같은 타일 모서리가 서로 바뀌어 붙는 경우가 많다. 이 경우 correspondence 수는 충분해 보여도 실제 pose constraint는 틀릴 수 있다.
+\end{codeanalysis}
+
+\codeheading{estimator.cpp:508--522}
+\lstinputlisting[language=C++,firstline=508,lastline=522,firstnumber=508]{third_party/VINS-Fusion/vins_estimator/src/estimator/estimator.cpp}
+\begin{codeanalysis}
+  \item stereo-only 설정에서는 IMU alignment 없이 stereo depth와 PnP 기반으로 초기화가 진행된다.
+  \item 지금 MP4 실험이 이 branch에 가깝다. 따라서 결과를 VIO라고 부르기보다는 VINS-Fusion의 stereo visual odometry 실행으로 이해하는 것이 정확하다.
+  \item 실제 대회용 UUV VIO로 가려면 이 초기화 뒤에 IMU factor가 켜지고, gravity/bias/extrinsic이 안정적으로 들어와야 한다.
+\end{codeanalysis}
+
+\section{7단계: Sliding-window factor graph optimization}
+
+\begin{definitionbox}{Factor graph optimization}
+Factor graph는 모르는 값인 상태 변수와, 그 값을 제한하는 residual factor를 그래프로 표현한 것이다.
+VINS backend는 최근 몇 개 frame만 window에 넣고, pose/velocity/bias/depth가 visual residual과 IMU residual을 동시에 잘 설명하도록 최적화한다.
+\end{definitionbox}
+
+\begin{examplebox}{상태와 제약}
+상태 변수는 ``frame 3의 pose'', ``frame 4의 velocity'', ``feature 21의 inverse depth'' 같은 미지수다.
+제약은 ``이 feature가 이미지에서는 여기 보였다'', ``IMU는 이 사이에 이만큼 회전했다고 말한다'' 같은 관측이다.
+최적화는 모든 제약의 오차가 전체적으로 작아지도록 상태를 조정한다.
+\end{examplebox}
+
+\subsection*{수식}
+
+VINS-Fusion backend는 최근 window 안의 pose, velocity, bias, extrinsic, feature inverse depth를 동시에 최적화한다.
+
+\[
+\cstate{\mathcal{X}}
+=
+\left\{
+\cstate{T_{wb_0}},\ldots,\cstate{T_{wb_N}},
+\cstate{\mathbf{v}_0},\ldots,\cstate{\mathbf{v}_N},
+\cstate{\mathbf{b}_{a_0}},\ldots,\cstate{\mathbf{b}_{g_N}},
+\cstate{T_{bc_0}},\cstate{T_{bc_1}},
+\cstate{\lambda_1},\ldots,\cstate{\lambda_M}
+\right\}
+\]
+
+\[
+\min_{\cstate{\mathcal{X}}}
+\sum_{\cparam{\text{visual}}}
+\cparam{\rho}\left(\norm{\cres{\mathbf{r}_{proj}}}^2\right)
++
+\sum_{\cparam{\text{imu}}}
+\norm{\cres{\mathbf{r}_{imu}}}^2_{\cparam{\Sigma^{-1}}}
++
+\norm{\cres{\mathbf{r}_{prior}}}^2
+\]
+
+visual residual은 다음 형태다.
+
+\[
+\cres{\mathbf{r}_{ij}}
+=
+\pi
+\left(
+\cstate{T_{c_jb_j}}\cstate{T_{b_jw}}\cstate{T_{wb_i}}\cstate{T_{b_ic_i}}
+\frac{1}{\cstate{\lambda}}\cmeas{\tilde{\mathbf{z}}_i}
+\right)
+- \cmeas{\mathbf{z}_j}
+\]
+
+\subsection*{각 항의 의미}
+
+\small
+\begin{tabularx}{\linewidth}{p{0.22\linewidth}Y}
+\toprule
+\textbf{항} & \textbf{의미} \\
+\midrule
+\(\mathcal{X}\) & sliding window 안에서 동시에 추정하는 전체 상태. \\
+\(T_{wb_i}\) & world에서 body/IMU frame \(i\)의 pose. \\
+\(\mathbf{v}_i,\mathbf{b}_{a_i},\mathbf{b}_{g_i}\) & velocity, accel bias, gyro bias. IMU를 쓸 때 핵심. \\
+\(T_{bc_0},T_{bc_1}\) & body와 left/right camera extrinsic. \\
+\(\lambda\) & inverse depth. depth \(Z\) 대신 \(1/Z\)를 최적화. \\
+\(\rho(\cdot)\) & robust loss. outlier residual 영향을 줄인다. 코드에서는 Huber loss. \\
+\(\mathbf{r}_{proj}\) & visual reprojection residual. \\
+\(\mathbf{r}_{imu}\) & IMU preintegration residual. \\
+\(\mathbf{r}_{prior}\) & marginalization으로 남은 prior residual. \\
+\(\Sigma^{-1}\) & measurement covariance inverse. residual weight. \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\clearpage
+\subsection*{factor graph와 sparse Hessian}
+
+\begin{visualblock}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \node[var] (x0) at (0,1.8) {\(\mathbf{x}_0\)};
+  \node[var] (x1) at (2.3,1.8) {\(\mathbf{x}_1\)};
+  \node[var] (x2) at (4.6,1.8) {\(\mathbf{x}_2\)};
+  \node[var] (ex) at (6.9,1.8) {\(T_{bc}\)};
+  \node[landmark] (l1) at (3.45,0.05) {\(\lambda_1\)};
+
+  \node[factor] (imu01) at (1.15,1.00) {\(\mathbf{r}_{imu}^{0,1}\)};
+  \node[factor] (imu12) at (3.45,1.00) {\(\mathbf{r}_{imu}^{1,2}\)};
+  \node[factor] (vis02) at (3.45,-0.95) {\(\mathbf{r}_{proj}^{0,2}\)};
+  \node[factor] (prior) at (-0.75,0.35) {\(\mathbf{r}_{prior}\)};
+
+  \draw[thick, accentorange] (x0) -- (imu01) -- (x1);
+  \draw[thick, accentorange] (x1) -- (imu12) -- (x2);
+  \draw[thick, accentblue] (x0.south) -- (0.0,-0.95) -- (vis02.west);
+  \draw[thick, accentblue] (x2.south) -- (4.6,-0.95) -- (vis02.east);
+  \draw[thick, accentgreen] (l1) -- (vis02);
+  \draw[thick, accentblue] (ex.south) -- (6.9,-0.95) -- (vis02.east);
+  \draw[thick, accentred] (prior) -- (x0);
+
+  \node[note, text width=37mm, anchor=west] at (7.70,0.55)
+    {동그라미는 최적화 변수, 사각형은 residual factor다. orange는 IMU chain, blue는 visual reprojection, red는 marginalized prior 연결을 뜻한다.};
+\end{tikzpicture}
+\figcaptiontext{VINS backend의 factor graph. 이 연결 구조가 아래 sparse Hessian의 block pattern으로 변환된다.}
+\end{visualblock}
+
+\[
+\begin{bmatrix}
+\cparam{H_{x_0x_0}} & \cparam{H_{x_0x_1}} & 0 & \cparam{H_{x_0\lambda}}\\
+\cparam{H_{x_1x_0}} & \cparam{H_{x_1x_1}} & \cparam{H_{x_1x_2}} & 0\\
+0 & \cparam{H_{x_2x_1}} & \cparam{H_{x_2x_2}} & \cparam{H_{x_2\lambda}}\\
+\cparam{H_{\lambda x_0}} & 0 & \cparam{H_{\lambda x_2}} & \cparam{H_{\lambda\lambda}}
+\end{bmatrix}
+\cstate{\delta\mathcal{X}}
+=
+\cres{\mathbf{b}}
+\]
+
+\subsection*{파라미터와 영향}
+
+\small
+\begin{tabularx}{\linewidth}{p{0.20\linewidth}p{0.27\linewidth}p{0.24\linewidth}Y}
+\toprule
+\textbf{파라미터} & \textbf{수식항 관계} & \textbf{작게 하면} & \textbf{크게 하면} \\
+\midrule
+\code{max\_solver\_time} & Ceres solve 시간 & realtime은 빠르지만 수렴 전 종료 가능. & 정확도는 좋아질 수 있지만 frame rate 저하. \\
+\code{max\_num\_iterations} & nonlinear iteration 수 & 초기값이 나쁘면 덜 수렴. & 계산량 증가. outlier가 많으면 오래 돌려도 개선 제한. \\
+\code{MAX\_CNT} & visual residual 수 & geometry constraint 부족. & residual과 outlier/계산량 증가. \\
+Huber scale & \(\rho(\cdot)\) & 정상 residual도 눌릴 수 있음. & outlier를 거의 그대로 믿을 수 있음. \\
+\code{WINDOW\_SIZE} & Hessian \(H\) 크기 & 빠르지만 history constraint 약함. & 정확도 가능성은 높지만 계산량/marginalization 비용 증가. \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\subsection*{backend 튜닝 판단 기준}
+
+\begin{tabularx}{\linewidth}{p{0.25\linewidth}p{0.25\linewidth}Y}
+\toprule
+\textbf{현상} & \textbf{수식 관점} & \textbf{먼저 조정할 것} \\
+\midrule
+solver가 매번 시간 제한에 걸림 & \(H\delta x=b\)를 충분히 풀기 전에 종료 & \code{MAX\_CNT}, frame rate, image resize를 낮춘 뒤 \code{solver\_time}을 늘린다. \\
+경로가 순간적으로 튐 & 큰 \(\mathbf{r}_{proj}\) 또는 잘못된 \(\lambda\)가 backend에 유입 & feature outlier gate, stereo calibration, Huber scale을 먼저 확인한다. \\
+느리게 계속 drift & local residual만으로 global 위치를 고정하지 못함 & loop, depth, marker, sonar factor 같은 global residual을 추가한다. \\
+IMU와 vision이 서로 싸움 & \(\mathbf{r}_{imu}\)와 \(\mathbf{r}_{proj}\)가 같은 motion을 설명하지 못함 & \code{td}, extrinsic, \code{acc\_n/gyr\_n}, timestamp sync를 점검한다. \\
+\bottomrule
+\end{tabularx}
+
+\subsection*{실제 코드}
+
+\readpoint{상태 변수 block을 Ceres problem에 올리고, 이후 visual/IMU/prior residual이 붙는다.}
+\codeheading{estimator.cpp:1004--1060}
+\lstinputlisting[language=C++,firstline=1004,lastline=1060,firstnumber=1004]{third_party/VINS-Fusion/vins_estimator/src/estimator/estimator.cpp}
+\begin{codeanalysis}
+  \item pose, velocity, bias, extrinsic, inverse depth가 Ceres parameter block으로 등록된다. 문서의 \(\mathcal{X}\)가 실제 코드에서는 여러 double array block으로 나뉘어 들어간다.
+  \item quaternion pose는 local parameterization을 써야 한다. 회전은 단순 4차원 벡터가 아니라 unit quaternion constraint를 유지해야 하기 때문이다.
+  \item \code{ESTIMATE\_EXTRINSIC} 여부에 따라 camera-IMU extrinsic이 고정되거나 최적화된다. 수중 하우징/마운트가 확실하지 않으면 이 설정이 path에 큰 영향을 준다.
+\end{codeanalysis}
+
+\codeheading{estimator.cpp:1064--1104}
+\lstinputlisting[language=C++,firstline=1064,lastline=1104,firstnumber=1064]{third_party/VINS-Fusion/vins_estimator/src/estimator/estimator.cpp}
+\begin{codeanalysis}
+  \item feature observation을 순회하면서 projection factor를 추가한다. 같은 landmark가 여러 frame/camera에 보이면 그만큼 residual edge가 생긴다.
+  \item stereo인 경우 two-camera factor가 들어가므로 metric depth scale을 직접 constrain한다. 하지만 baseline/calibration이 틀리면 이 강한 constraint가 잘못된 scale을 강하게 밀어붙인다.
+  \item outlier feature가 여기까지 들어오면 Ceres는 그 점도 설명하려고 pose와 depth를 움직인다. 그래서 frontend rejection이 backend 안정성의 핵심이다.
+\end{codeanalysis}
+
+\codeheading{projectionTwoFrameTwoCamFactor.cpp:43--80}
+\lstinputlisting[language=C++,firstline=43,lastline=80,firstnumber=43]{third_party/VINS-Fusion/vins_estimator/src/factor/projectionTwoFrameTwoCamFactor.cpp}
+\begin{codeanalysis}
+  \item 이 factor는 한 feature를 기준 frame의 inverse depth로 3D화한 뒤, 다른 frame/다른 camera로 옮겨 projection error를 계산한다.
+  \item 수식의 \(T_{c_jb_j}T_{b_jw}T_{wb_i}T_{b_ic_i}\frac{1}{\lambda}\tilde z_i\)가 코드의 좌표 변환 체인으로 구현되어 있다.
+  \item residual은 image plane의 2D 오차다. 수중 굴절이나 잘못된 camera model은 이 residual을 체계적으로 키우므로, 단순 noise가 아니라 calibration/model 문제로 봐야 한다.
+\end{codeanalysis}
+
+\codeheading{estimator.cpp:1113--1133}
+\lstinputlisting[language=C++,firstline=1113,lastline=1133,firstnumber=1113]{third_party/VINS-Fusion/vins_estimator/src/estimator/estimator.cpp}
+\begin{codeanalysis}
+  \item 여기서 \code{max\_solver\_time}과 \code{max\_num\_iterations}가 실제 Ceres option으로 들어간다.
+  \item 시간이 부족하면 optimization이 덜 수렴한 상태로 다음 frame으로 넘어간다. realtime은 좋아지지만 path가 덜 부드럽거나 drift가 커질 수 있다.
+  \item 반대로 solver 시간을 늘려도 feature outlier가 많으면 더 오래 잘못된 문제를 풀 뿐이다. 속도 튜닝 전에는 residual 품질과 feature gate를 먼저 봐야 한다.
+\end{codeanalysis}
+
+\section{8단계: Marginalization과 sliding window}
+
+\begin{definitionbox}{Marginalization}
+Marginalization은 window에서 제거할 오래된 변수를 완전히 버리지 않고, 그 변수가 남긴 정보를 prior factor로 압축하는 과정이다.
+Sliding window는 계산량을 제한하기 위해 필요하지만, 과거 정보를 모두 버리면 drift가 커진다.
+\end{definitionbox}
+
+\begin{examplebox}{요약 노트 비유}
+과거 frame 0을 window에서 빼야 한다고 하자.
+그 frame을 그냥 삭제하면 frame 0이 알려준 geometry 정보를 잃는다.
+Marginalization은 frame 0과 연결된 정보를 ``요약 노트''처럼 남겨서 다음 optimization이 그 정보를 계속 참고하게 만든다.
+\end{examplebox}
+
+\subsection*{수식}
+
+남길 변수 \(a\), 제거할 변수 \(b\)로 normal equation을 나누면 다음과 같다.
+
+\[
+\begin{bmatrix}
+\cparam{H_{aa}} & \cparam{H_{ab}}\\
+\cparam{H_{ba}} & \cparam{H_{bb}}
+\end{bmatrix}
+\begin{bmatrix}
+\cstate{\delta x_a}\\
+\cstate{\delta x_b}
+\end{bmatrix}
+=
+\begin{bmatrix}
+\cres{b_a}\\
+\cres{b_b}
+\end{bmatrix}
+\]
+
+제거할 변수 \(b\)를 Schur complement로 없애면 prior가 된다.
+
+\[
+\cparam{H'_{aa}}=\cparam{H_{aa}}-\cparam{H_{ab}}\cparam{H_{bb}^{-1}}\cparam{H_{ba}},
+\qquad
+\cres{b'_a}=\cres{b_a}-\cparam{H_{ab}}\cparam{H_{bb}^{-1}}\cres{b_b}
+\]
+
+\subsection*{각 항의 의미}
+
+\begin{tabularx}{\linewidth}{p{0.20\linewidth}Y}
+\toprule
+\textbf{항} & \textbf{의미} \\
+\midrule
+\(\delta x_a\) & window에 남길 변수 update. 최근 pose, extrinsic 등. \\
+\(\delta x_b\) & 제거할 변수 update. 오래된 pose, feature depth 등. \\
+\(H_{aa},H_{bb}\) & 남길 변수/제거할 변수의 Hessian block. \\
+\(H_{ab},H_{ba}\) & 남길 변수와 제거할 변수 사이 coupling. \\
+\(H'_{aa},b'_a\) & 제거 후 남는 prior factor. \\
+\bottomrule
+\end{tabularx}
+
+\clearpage
+\subsection*{Schur complement 그림}
+
+\begin{visualblock}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \node[figlabel, anchor=west] at (0,3.65) {분할된 normal equation};
+  \draw[fill=stageblue, draw=accentblue!70!black] (0,1.85) rectangle (1.75,3.25);
+  \node at (0.875,2.55) {\(H_{aa}\)};
+  \draw[fill=stageorange, draw=accentorange!75!black] (1.75,1.85) rectangle (3.35,3.25);
+  \node at (2.55,2.55) {\(H_{ab}\)};
+  \draw[fill=stageorange, draw=accentorange!75!black] (0,0.30) rectangle (1.75,1.85);
+  \node at (0.875,1.08) {\(H_{ba}\)};
+  \draw[fill=stagered, draw=accentred!75!black] (1.75,0.30) rectangle (3.35,1.85);
+  \node at (2.55,1.08) {\(H_{bb}\)};
+  \node[axislabel, anchor=east] at (-0.2,2.55) {남김 \(a\)};
+  \node[axislabel, anchor=east] at (-0.2,1.08) {제거 \(b\)};
+  \node[axislabel, anchor=north] at (0.875,0.08) {남김 \(a\)};
+  \node[axislabel, anchor=north] at (2.55,0.08) {제거 \(b\)};
+
+  \draw[arrow] (3.75,1.85) -- (5.30,1.85);
+  \node[note, text width=31mm, anchor=south] at (4.52,2.18)
+    {old pose/feature를 직접 없애되, 그 정보는 prior로 압축한다.};
+
+  \node[figlabel, anchor=west] at (5.70,3.65) {남는 prior};
+  \draw[fill=stagegreen, draw=accentgreen!70!black] (5.90,1.15) rectangle (8.55,2.75);
+  \node[align=center] at (7.225,1.95) {\(H'_{aa}\)\\\(=H_{aa}-H_{ab}H_{bb}^{-1}H_{ba}\)};
+  \draw[arrow] (7.225,1.15) -- (7.225,0.45);
+  \node[note, text width=44mm, anchor=north] at (7.225,0.35)
+    {\(H_{bb}^{-1}\)가 불안정하면 prior도 불안정해진다. 그래서 outlier feature와 너무 약한 geometry를 marginalization 전에 줄여야 한다.};
+\end{tikzpicture}
+\figcaptiontext{Sliding window가 작아도 과거 정보를 완전히 버리지 않기 위해 Schur complement로 prior factor를 만든다.}
+\end{visualblock}
+
+\subsection*{파라미터와 영향}
+
+\begin{tabularx}{\linewidth}{p{0.22\linewidth}p{0.27\linewidth}p{0.23\linewidth}Y}
+\toprule
+\textbf{항목} & \textbf{수식항 관계} & \textbf{작게/부족하면} & \textbf{크게/많으면} \\
+\midrule
+\code{WINDOW\_SIZE} & \(H\) matrix 크기 & 빠르지만 drift 억제 약함. & constraint 증가, 계산량/memory 증가. \\
+\code{MARGIN\_OLD} & 오래된 \(x_b\) 제거 & 과거 정보가 빨리 prior화됨. & 선형화 prior가 누적될 수 있음. \\
+\code{MARGIN\_SECOND\_NEW} & 새 frame 근처 제거 & keyframe 보존 부족 시 window 품질 저하. & 최신 motion 반영이 둔해질 수 있음. \\
+\code{keyframe\_parallax} & marginalization 방향에 간접 영향 & keyframe 과다, 계산량 증가. & keyframe 부족, geometry 약화. \\
+\bottomrule
+\end{tabularx}
+
+\subsection*{실제 코드}
+
+\readpoint{제거할 변수와 연결된 residual을 Schur complement로 압축해 다음 window의 prior로 넘긴다.}
+\codeheading{estimator.cpp:1140--1255}
+\lstinputlisting[language=C++,firstline=1140,lastline=1255,firstnumber=1140]{third_party/VINS-Fusion/vins_estimator/src/estimator/estimator.cpp}
+\begin{codeanalysis}
+  \item sliding window 밖으로 나갈 pose/feature를 그냥 버리지 않고, 그 정보량을 prior factor로 압축한다.
+  \item 코드 흐름은 residual block 수집 \(\rightarrow\) marginalization parameter block 지정 \(\rightarrow\) Schur complement 수행이다.
+  \item marginalization은 선형화된 prior를 남기므로, outlier가 들어간 상태에서 marginalize하면 잘못된 정보도 prior로 굳어진다. 수중 repeated pattern outlier가 특히 위험한 이유다.
+\end{codeanalysis}
+
+\codeheading{estimator.cpp:1329--1368}
+\lstinputlisting[language=C++,firstline=1329,lastline=1368,firstnumber=1329]{third_party/VINS-Fusion/vins_estimator/src/estimator/estimator.cpp}
+\begin{codeanalysis}
+  \item window state를 한 칸씩 shift한다. pose, velocity, bias, preintegration buffer가 함께 이동해야 시간 순서가 유지된다.
+  \item 이 과정이 잘못되면 다음 frame의 residual이 이전 state와 맞지 않는다. 그래서 marginalization flag와 window shift는 한 세트로 이해해야 한다.
+  \item keyframe 선택이 불안정하면 window 안에 남는 frame 구성이 나빠지고, 이후 optimization의 geometry가 약해진다.
+\end{codeanalysis}
+
+\section{9단계: Loop/global/sonar constraint}
+
+\begin{definitionbox}{Global constraint}
+VIO는 기본적으로 local odometry라서 시간이 지나면 drift가 누적된다.
+Global constraint는 loop closure, sonar landmark, depth sensor, marker처럼 절대적이거나 장기적인 기준을 제공하는 제약이다.
+이 제약이 있어야 VIO가 SLAM에 가까워진다.
+\end{definitionbox}
+
+\begin{examplebox}{vision은 local, sonar는 global}
+수영장 타일은 반복되어 vision만으로는 장거리 위치를 안정적으로 고정하기 어렵다.
+반면 sonar가 벽, 부표, 구조물과의 거리를 안정적으로 준다면, 이 measurement를 global factor로 넣어 local VIO drift를 잡을 수 있다.
+단, sonar association이 틀리면 global factor가 오히려 path를 잘못 끌고 간다.
+\end{examplebox}
+
+\subsection*{수식}
+
+VIO는 local odometry이므로 장시간 drift한다.
+SLAM에 가까워지려면 loop closure나 sonar/global measurement가 residual로 추가되어야 한다.
+
+\[
+\cres{r_{\text{global}}} = \cparam{h}(\cstate{\mathbf{x}_k},\cstate{\mathbf{m}})-\cmeas{\mathbf{z}_k}
+\]
+
+depth sensor 예시는 다음과 같다.
+
+\[
+\cres{r_{\text{depth}}}=\cparam{\mathbf{e}_z^\top}\cstate{\mathbf{p}_k}-\cmeas{z_k^{meas}}
+\]
+
+\subsection*{각 항과 파라미터}
+
+\begin{tabularx}{\linewidth}{p{0.20\linewidth}p{0.32\linewidth}Y}
+\toprule
+\textbf{항/파라미터} & \textbf{의미} & \textbf{영향} \\
+\midrule
+\(h(\mathbf{x}_k,\mathbf{m})\) & 상태와 map으로 예측한 sonar/global measurement. & sonar model이 잘못되면 global residual이 pose를 잘못 끌고 간다. \\
+\(\mathbf{z}_k\) & 실제 sonar/depth/acoustic/marker measurement. & outlier handling이 필요하다. \\
+measurement noise \(\sigma\) & residual weight. & 작으면 sensor 과신, 크면 drift 보정 약화. \\
+association threshold & map landmark와 measurement 연결 허용 범위. & 작으면 정상 관측 reject, 크면 잘못된 landmark 연결. \\
+robust loss scale & global outlier 억제 강도. & 작으면 정상 correction도 약화, 크면 outlier에 취약. \\
+\bottomrule
+\end{tabularx}
+
+\subsection*{실제 코드}
+
+\readpoint{VIO local path를 global pose graph로 보정하는 API 경계다. sonar/global factor도 같은 관점에서 추가한다.}
+\codeheading{pose\_graph.h:46--75}
+\lstinputlisting[language=C++,firstline=46,lastline=75,firstnumber=46]{third_party/VINS-Fusion/loop_fusion/src/pose_graph.h}
+\begin{codeanalysis}
+  \item \code{PoseGraph}는 local VIO 결과를 keyframe 단위 graph로 저장하고, loop constraint를 추가해 global drift를 줄이는 구조다.
+  \item VINS estimator가 frame-to-frame local odometry를 만들고, pose graph는 더 긴 시간 범위의 일관성을 본다. 이 둘을 구분해야 한다.
+  \item sonar/global landmark를 넣는다면 새 sensor residual도 결국 pose graph 또는 backend factor 형태로 들어가야 한다. 단순히 RViz path를 후처리로 보정하는 것과 다르다.
+\end{codeanalysis}
+
+\codeheading{keyframe.cpp:483--501}
+\lstinputlisting[language=C++,firstline=483,lastline=501,firstnumber=483]{third_party/VINS-Fusion/loop_fusion/src/keyframe.cpp}
+\begin{codeanalysis}
+  \item loop가 검출되면 두 keyframe 사이의 상대 pose constraint를 만든다. 이 constraint가 pose graph optimization에서 drift를 당겨준다.
+  \item 수영장처럼 반복 패턴이 많은 곳에서는 loop detection 자체도 false positive가 날 수 있다. global constraint에는 robust loss와 추가 검증이 필요하다.
+  \item sonar나 marker를 쓴다면 loop image matching보다 더 신뢰도 높은 global edge로 쓸 수 있다. 다만 measurement noise를 작게 잡으면 잘못된 sonar association이 전체 path를 망칠 수 있다.
+\end{codeanalysis}
+
+\section{10단계: 현재 GUI wrapper의 위치}
+
+GUI는 VINS 알고리즘의 핵심이 아니라 실험 자동화 wrapper다.
+다음 일을 수행한다.
+
+\begin{enumerate}
+  \item 좌/우 MP4를 KITTI-style image sequence로 변환한다.
+  \item camera/tracker/backend 파라미터를 VINS YAML로 만든다.
+  \item Docker 안에서 VINS-Fusion \code{kitti\_odom\_test}를 실행한다.
+  \item \code{vio.txt}를 CSV로 바꿔 RViz live path로 넘긴다.
+\end{enumerate}
+
+\small
+\begin{tabularx}{\linewidth}{p{0.20\linewidth}p{0.24\linewidth}Y}
+\toprule
+\textbf{GUI 값} & \textbf{VINS 연결} & \textbf{주의점} \\
+\midrule
+frame/fps & sequence timestamp & IMU 결합 시 timestamp 정확도가 중요하다. \\
+camera calib & stereo projection/depth & 수중 calibration 없이 metric trajectory를 믿으면 안 된다. \\
+tracker params & feature tracking & 반복 타일에서는 feature 수보다 품질과 분산이 중요하다. \\
+solver params & backend runtime & 대회용 realtime성과 수렴 품질의 trade-off다. \\
+\bottomrule
+\end{tabularx}
+\normalsize
+
+\readpoint{GUI는 알고리즘 자체가 아니라 dataset/config/run wrapper다.}
+\codeheading{web\_gui.py:658--736}
+\lstinputlisting[language=Python,firstline=658,lastline=736,firstnumber=658]{web_gui.py}
+\begin{codeanalysis}
+  \item GUI에서 받은 값을 dataset export와 VINS config 생성으로 연결하는 wrapper다. VINS 알고리즘을 새로 구현하는 부분은 아니다.
+  \item 여기서 만든 YAML 값이 \code{parameters.cpp}의 \code{readParameters()}로 들어가므로, GUI 조작은 결국 VINS 전역 파라미터 변경으로 이어진다.
+  \item 수중 실험에서는 GUI에 보이는 값과 실제 생성된 YAML을 항상 같이 확인해야 한다. 특히 \code{fx/fy/cx/cy}, baseline, resize는 depth scale에 직접 연결된다.
+\end{codeanalysis}
+
+\codeheading{web\_gui.py:750--775}
+\lstinputlisting[language=Python,firstline=750,lastline=775,firstnumber=750]{web_gui.py}
+\begin{codeanalysis}
+  \item VINS 실행 결과를 CSV/RViz live file로 넘기는 후처리 구간이다. 즉 RViz에서 보는 path는 VINS가 낸 \code{vio.txt}를 변환한 결과다.
+  \item Docker/VINS 실행이 실패하면 이 단계에는 실제 odometry가 없고, RViz도 갱신할 path가 없다. 이전에 보던 live path가 남아 있으면 결과를 착각할 수 있다.
+  \item GUI에서 ``Run selected''를 눌렀을 때 봐야 하는 것은 영상 preview, 생성 config, VINS stdout, \code{vio.txt} 존재 여부, RViz path 갱신 순서다.
+\end{codeanalysis}
+
+\section{수중 UUV 개발 순서}
+
+\begin{enumerate}
+  \item 수중 stereo calibration을 먼저 확보한다. \(K\), distortion, baseline이 틀리면 모든 depth와 scale이 틀어진다.
+  \item stereo-only VINS를 짧은 구간에서 검증한다. feature track, depth, scale, RViz path 방향을 본다.
+  \item IMU topic을 연결한다. \code{imu: 1}, camera-IMU extrinsic, time offset, noise를 맞춘다.
+  \item feature frontend를 수영장 환경에 맞춘다. \code{MIN\_DIST}, \code{MAX\_CNT}, \code{FLOW\_BACK}을 조절한다.
+  \item backend realtime성을 맞춘다. \code{solver\_time}, iteration, frame rate를 대회용 속도에 맞춘다.
+  \item sonar/depth/global factor를 추가해 local drift를 줄인다.
+\end{enumerate}
+
+\section{핵심 요약}
+
+VINS-Fusion을 제대로 읽는 핵심은 다음 관계를 계속 따라가는 것이다.
+
+\[
+\cparam{\text{parameter}}
+\rightarrow
+\text{equation term}
+\rightarrow
+\cres{\text{residual}}
+\rightarrow
+\cstate{\text{trajectory behavior}}
+\]
+
+수중 UUV에서는 특히 다음 세 가지가 중요하다.
+
+\begin{enumerate}
+  \item feature는 많이 잡는 것보다 오래 살아남고 넓게 퍼지는 것이 중요하다.
+  \item stereo depth는 \(Z=f_xb/d\)라서 calibration과 disparity error에 매우 민감하다.
+  \item VIO-SLAM은 visual residual만으로 끝나지 않고 IMU와 sonar/global residual을 factor graph에 함께 넣어야 한다.
+\end{enumerate}
+
+\end{document}
