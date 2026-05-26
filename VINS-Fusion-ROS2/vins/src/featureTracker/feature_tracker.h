@@ -55,7 +55,6 @@ public:
     map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> trackImage(double _cur_time, const cv::Mat &_img, const cv::Mat &_img1 = cv::Mat());
     void setMask();
     void addPoints();
-    void detectNewFeaturesGrid(int max_new_features);
     void readIntrinsicParameter(const vector<string> &calib_file);
     void showUndistortion(const string &name);
     void rejectWithF();
@@ -70,23 +69,17 @@ public:
                                    vector<cv::Point2f> &curLeftPts, 
                                    vector<cv::Point2f> &curRightPts,
                                    map<int, cv::Point2f> &prevLeftPtsMap);
-    void recoverStereoWithNccFallback(const cv::Mat &rightImg, vector<uchar> &status);
-    void rejectWithQuadStereoTemporal(const cv::Mat &rightImg, vector<uchar> &status);
     void setPrediction(map<int, Eigen::Vector3d> &predictPts);
     double distance(cv::Point2f &pt1, cv::Point2f &pt2);
     void removeOutliers(set<int> &removePtsIds);
     cv::Mat getTrackImage();
-    cv::Mat getTrackImageLeft();
-    cv::Mat getTrackImageRight();
     bool inBorder(const cv::Point2f &pt);
 
     int row, col;
     cv::Mat imTrack;
-    cv::Mat imTrackLeft;
-    cv::Mat imTrackRight;
     cv::Mat mask;
     cv::Mat fisheye_mask;
-    cv::Mat prev_img, cur_img, prev_right_img;
+    cv::Mat prev_img, cur_img;
     vector<cv::Point2f> n_pts;
     vector<cv::Point2f> predict_pts;
     vector<cv::Point2f> predict_pts_debug;
@@ -97,15 +90,11 @@ public:
     vector<int> track_cnt;
     map<int, cv::Point2f> cur_un_pts_map, prev_un_pts_map;
     map<int, cv::Point2f> cur_un_right_pts_map, prev_un_right_pts_map;
-    map<int, cv::Point2f> prevLeftPtsMap, prevRightPtsMap;
+    map<int, cv::Point2f> prevLeftPtsMap;
     vector<camodocal::CameraPtr> m_camera;
     double cur_time;
     double prev_time;
     bool stereo_cam;
     int n_id;
     bool hasPrediction;
-    int stereo_fallback_log_counter;
-    int last_ncc_attempted;
-    int last_ncc_recovered;
-    int last_quad_rejected;
 };

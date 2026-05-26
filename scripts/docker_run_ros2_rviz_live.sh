@@ -147,7 +147,6 @@ docker run \
   -e DVL_REPLAY_HZ="${DVL_REPLAY_HZ:-10.0}" \
   -e LOCALIZATION_ALIGN_MODE="${LOCALIZATION_ALIGN_MODE:-none}" \
   -e LOCALIZATION_ALIGN_YAW_DEG="${LOCALIZATION_ALIGN_YAW_DEG:-0.0}" \
-  -e VINS_OUTPUT_PATH="${VINS_OUTPUT_PATH:-}" \
   -e VINS_DRAIN_TIMEOUT_SEC="${VINS_DRAIN_TIMEOUT_SEC:-25}" \
   -e VINS_DRAIN_IDLE_SEC="${VINS_DRAIN_IDLE_SEC:-5}" \
   -e EKF_CONFIG="${EKF_CONFIG:-/workspace/under_water_image_match/config/ekf_vins_pixhawk.yaml}" \

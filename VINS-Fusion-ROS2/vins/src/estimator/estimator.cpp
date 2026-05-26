@@ -9,10 +9,6 @@
 
 #include "estimator.h"
 #include "../utility/visualization.h"
-#include <algorithm>
-#include <ceres/version.h>
-#include <cmath>
-#include <limits>
 
 Estimator::Estimator(): f_manager{Rs}
 {
@@ -45,20 +41,9 @@ void Estimator::clearState()
     openExEstimation = 0;
     initP = Eigen::Vector3d(0, 0, 0);
     initR = Eigen::Matrix3d::Identity();
-    latest_time = 0.0;
-    latest_P.setZero();
-    latest_V.setZero();
-    latest_Ba.setZero();
-    latest_Bg.setZero();
-    latest_acc_0.setZero();
-    latest_gyr_0.setZero();
-    latest_Q.setIdentity();
-    last_R.setIdentity();
-    last_R0.setIdentity();
-    last_P.setZero();
-    last_P0.setZero();
     inputImageCnt = 0;
     initFirstPoseFlag = false;
+
     for (int i = 0; i < WINDOW_SIZE + 1; i++)
     {
         Rs[i].setIdentity();
@@ -91,7 +76,6 @@ void Estimator::clearState()
     solver_flag = INITIAL;
     initial_timestamp = 0;
     all_image_frame.clear();
-    underwater_init_pnp_status.clear();
 
     if (tmp_pre_integration != nullptr)
     {
@@ -125,12 +109,9 @@ void Estimator::setParameter()
         cout << " exitrinsic cam " << i << endl  << ric[i] << endl << tic[i].transpose() << endl;
     }
     f_manager.setRic(ric);
-    const double projection_noise_px = UNDERWATER_MODE ?
-        std::max(0.5, UNDERWATER_PROJECTION_NOISE_PX) : 1.5;
-    ProjectionTwoFrameOneCamFactor::sqrt_info = FOCAL_LENGTH / projection_noise_px * Matrix2d::Identity();
-    ProjectionTwoFrameTwoCamFactor::sqrt_info = FOCAL_LENGTH / projection_noise_px * Matrix2d::Identity();
-    ProjectionOneFrameTwoCamFactor::sqrt_info = FOCAL_LENGTH / projection_noise_px * Matrix2d::Identity();
-    ROS_INFO("projection noise %.2f px", projection_noise_px);
+    ProjectionTwoFrameOneCamFactor::sqrt_info = FOCAL_LENGTH / 1.5 * Matrix2d::Identity();
+    ProjectionTwoFrameTwoCamFactor::sqrt_info = FOCAL_LENGTH / 1.5 * Matrix2d::Identity();
+    ProjectionOneFrameTwoCamFactor::sqrt_info = FOCAL_LENGTH / 1.5 * Matrix2d::Identity();
     td = TD;
     g = G;
     cout << "set g " << g.transpose() << endl;
@@ -198,17 +179,12 @@ void Estimator::inputImage(double t, const cv::Mat &_img, const cv::Mat &_img1)
     if (SHOW_TRACK)
     {
         cv::Mat imgTrack = featureTracker.getTrackImage();
-        pubTrackImage(
-            imgTrack,
-            t,
-            featureTracker.getTrackImageLeft(),
-            featureTracker.getTrackImageRight()
-        );
+        pubTrackImage(imgTrack, t);
     }
     
     if(MULTIPLE_THREAD)  
     {     
-        if(UNDERWATER_VISUAL_DOMINANT_VIO || inputImageCnt % 2 == 0)
+        if(inputImageCnt % 2 == 0)
         {
             mBuf.lock();
             featureBuf.push(make_pair(t, featureFrame));
@@ -235,7 +211,7 @@ void Estimator::inputIMU(double t, const Vector3d &linearAcceleration, const Vec
     //printf("input imu with time %f \n", t);
     mBuf.unlock();
 
-    if (solver_flag == NON_LINEAR && !UNDERWATER_VISUAL_DOMINANT_VIO)
+    if (solver_flag == NON_LINEAR)
     {
         mPropagate.lock();
         fastPredictIMU(t, linearAcceleration, angularVelocity);
@@ -269,7 +245,7 @@ bool Estimator::getIMUInterval(double t0, double t1, vector<pair<double, Eigen::
     // printf("imu fornt time %f   imu end time %f\n", accBuf.front().first, accBuf.back().first);
     if(t1 <= accBuf.back().first)
     {
-        while (!accBuf.empty() && accBuf.front().first <= t0)
+        while (accBuf.front().first <= t0)
         {
             // std::cout << "t_imu: " << std::fixed << accBuf.front().first << "  t_0: " << std::fixed << t0 << "   gyr_buf size: " << gyrBuf.size() << std::endl;
             // std::cout << "1) acc pop" << std::endl;
@@ -277,25 +253,7 @@ bool Estimator::getIMUInterval(double t0, double t1, vector<pair<double, Eigen::
             // std::cout << "1) gyr pop" << std::endl;
             gyrBuf.pop();
         }
-        if (accBuf.empty())
-        {
-            printf("wait for imu\n");
-            return false;
-        }
-        if (accBuf.front().first > t1)
-        {
-            const double interval_dt = t1 - t0;
-            const double front_gap = accBuf.front().first - t1;
-            if (UNDERWATER_MODE && interval_dt > 0.0 && interval_dt <= 0.015 && front_gap <= 0.012)
-            {
-                accVector.push_back(std::make_pair(t1, accBuf.front().second));
-                gyrVector.push_back(std::make_pair(t1, gyrBuf.front().second));
-                return true;
-            }
-            printf("wait for imu bracket\n");
-            return false;
-        }
-        while (!accBuf.empty() && accBuf.front().first < t1)
+        while (accBuf.front().first < t1)
         {
             accVector.push_back(accBuf.front());
             // std::cout << "2) acc pop" << std::endl;
@@ -303,11 +261,6 @@ bool Estimator::getIMUInterval(double t0, double t1, vector<pair<double, Eigen::
             gyrVector.push_back(gyrBuf.front());
             // std::cout << "2) gyr pop" << std::endl;
             gyrBuf.pop();
-        }
-        if (accBuf.empty())
-        {
-            printf("wait for imu\n");
-            return false;
         }
         accVector.push_back(accBuf.front());
         gyrVector.push_back(gyrBuf.front());
@@ -360,26 +313,7 @@ void Estimator::processMeasurements()
             if(USE_IMU)
             {
                 // cout << "2-1)" << endl;
-                if (prevTime < 0.0)
-                {
-                    if (accBuf.empty() || accBuf.front().first > curTime)
-                    {
-                        ROS_WARN("drop image %.6f before first usable imu %.6f",
-                                 feature.first,
-                                 accBuf.empty() ? -1.0 : accBuf.front().first);
-                        featureBuf.pop();
-                        mBuf.unlock();
-                        continue;
-                    }
-                    prevTime = accBuf.front().first - 1e-6;
-                }
-                if (!getIMUInterval(prevTime, curTime, accVector, gyrVector))
-                {
-                    ROS_WARN("drop image %.6f without complete imu bracket", feature.first);
-                    featureBuf.pop();
-                    mBuf.unlock();
-                    continue;
-                }
+                getIMUInterval(prevTime, curTime, accVector, gyrVector);
                 // cout << "2-2)" << endl;
             }
 
@@ -389,10 +323,8 @@ void Estimator::processMeasurements()
             // cout << "3" << endl;
             if(USE_IMU)
             {
-                if(!initFirstPoseFlag && !UNDERWATER_VISUAL_DOMINANT_VIO)
+                if(!initFirstPoseFlag)
                     initFirstIMUPose(accVector);
-                else if (!initFirstPoseFlag)
-                    initFirstPoseFlag = true;
                 for(size_t i = 0; i < accVector.size(); i++)
                 {
                     double dt;
@@ -402,11 +334,6 @@ void Estimator::processMeasurements()
                         dt = curTime - accVector[i - 1].first;
                     else
                         dt = accVector[i].first - accVector[i - 1].first;
-                    if (dt <= 0.0 || dt > 0.20 || !std::isfinite(dt))
-                    {
-                        ROS_WARN("skip abnormal imu dt %.9f at %.6f", dt, accVector[i].first);
-                        continue;
-                    }
                     processIMU(accVector[i].first, dt, accVector[i].second, gyrVector[i].second);
                 }
             }
@@ -487,6 +414,7 @@ void Estimator::initFirstPose(Eigen::Vector3d p, Eigen::Matrix3d r)
     initR = r;
 }
 
+
 void Estimator::processIMU(double t, double dt, const Vector3d &linear_acceleration, const Vector3d &angular_velocity)
 {
     if (!first_imu)
@@ -509,13 +437,6 @@ void Estimator::processIMU(double t, double dt, const Vector3d &linear_accelerat
         dt_buf[frame_count].push_back(dt);
         linear_acceleration_buf[frame_count].push_back(linear_acceleration);
         angular_velocity_buf[frame_count].push_back(angular_velocity);
-
-        if (UNDERWATER_VISUAL_DOMINANT_VIO)
-        {
-            acc_0 = linear_acceleration;
-            gyr_0 = angular_velocity;
-            return;
-        }
 
         int j = frame_count;         
         Vector3d un_acc_0 = Rs[j] * (acc_0 - Bas[j]) - g;
@@ -558,34 +479,6 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
     imageframe.pre_integration = tmp_pre_integration;
     all_image_frame.insert(make_pair(header, imageframe));
     tmp_pre_integration = new IntegrationBase{acc_0, gyr_0, Bas[frame_count], Bgs[frame_count]};
-    auto currentPnpRotationLimit = [&]() -> double
-    {
-        double pnp_rotation_limit = UNDERWATER_PNP_MAX_ROTATION_RAD;
-        if (UNDERWATER_MODE && USE_IMU && pre_integrations[frame_count] != nullptr)
-        {
-            Eigen::Quaterniond imu_delta_q = pre_integrations[frame_count]->delta_q;
-            imu_delta_q.normalize();
-            const double imu_delta_w = std::max(-1.0, std::min(1.0, std::abs(imu_delta_q.w())));
-            const double imu_rotation = 2.0 * std::acos(imu_delta_w);
-            if (std::isfinite(imu_rotation))
-            {
-                const double margin = std::max(0.05, 0.5 * UNDERWATER_PNP_MAX_ROTATION_RAD);
-                const double adaptive_limit = imu_rotation + margin;
-                if (pnp_rotation_limit > 0.0)
-                    pnp_rotation_limit = std::max(pnp_rotation_limit, adaptive_limit);
-                else
-                    pnp_rotation_limit = adaptive_limit;
-            }
-        }
-        return pnp_rotation_limit;
-    };
-    auto resetFailureReference = [&]()
-    {
-        last_R = Rs[WINDOW_SIZE];
-        last_P = Ps[WINDOW_SIZE];
-        last_R0 = Rs[0];
-        last_P0 = Ps[0];
-    };
 
     if(ESTIMATE_EXTRINSIC == 2)
     {
@@ -625,7 +518,6 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
                     updateLatestStates();
                     solver_flag = NON_LINEAR;
                     slideWindow();
-                    resetFailureReference();
                     ROS_INFO("Initialization finish!");
                 }
                 else
@@ -636,47 +528,10 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
         // stereo + IMU initilization
         if(STEREO && USE_IMU)
         {
-            double pnp_step_limit = UNDERWATER_PNP_MAX_STEP_M;
-            bool pnp_ok = f_manager.initFramePoseByPnP(frame_count, Ps, Rs, tic, ric,
-                                                       pnp_step_limit, currentPnpRotationLimit());
-            if (UNDERWATER_MODE)
-            {
-                if (underwater_init_pnp_status.size() >= static_cast<size_t>(WINDOW_SIZE + 1))
-                    underwater_init_pnp_status.pop_front();
-                underwater_init_pnp_status.push_back(pnp_ok ? 1 : 0);
-            }
+            f_manager.initFramePoseByPnP(frame_count, Ps, Rs, tic, ric);
             f_manager.triangulate(frame_count, Ps, Rs, tic, ric);
-            if (UNDERWATER_VISUAL_DOMINANT_VIO)
+            if (frame_count == WINDOW_SIZE)
             {
-                optimization();
-
-                if (frame_count == WINDOW_SIZE)
-                {
-                    optimization();
-                    updateLatestStates();
-                    solver_flag = NON_LINEAR;
-                    slideWindow();
-                    resetFailureReference();
-                    ROS_INFO("Initialization finish!");
-                }
-            }
-            else if (frame_count == WINDOW_SIZE)
-            {
-                if (UNDERWATER_MODE)
-                {
-                    int pnp_failures = 0;
-                    for (int status : underwater_init_pnp_status)
-                    {
-                        if (status == 0)
-                            pnp_failures++;
-                    }
-                    constexpr int max_init_pnp_failures = 2;
-                    if (pnp_failures > max_init_pnp_failures)
-                    {
-                        ROS_WARN("underwater initialization has %d PnP rejected frames in current window; continuing with stereo/IMU initialization",
-                                 pnp_failures);
-                    }
-                }
                 map<double, ImageFrame>::iterator frame_it;
                 int i = 0;
                 for (frame_it = all_image_frame.begin(); frame_it != all_image_frame.end(); frame_it++)
@@ -693,9 +548,7 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
                 optimization();
                 updateLatestStates();
                 solver_flag = NON_LINEAR;
-                underwater_init_pnp_status.clear();
                 slideWindow();
-                resetFailureReference();
                 ROS_INFO("Initialization finish!");
             }
         }
@@ -703,9 +556,7 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
         // stereo only initilization
         if(STEREO && !USE_IMU)
         {
-            double pnp_step_limit = UNDERWATER_PNP_MAX_STEP_M;
-            f_manager.initFramePoseByPnP(frame_count, Ps, Rs, tic, ric,
-                                         pnp_step_limit, currentPnpRotationLimit());
+            f_manager.initFramePoseByPnP(frame_count, Ps, Rs, tic, ric);
             f_manager.triangulate(frame_count, Ps, Rs, tic, ric);
             optimization();
 
@@ -715,7 +566,6 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
                 updateLatestStates();
                 solver_flag = NON_LINEAR;
                 slideWindow();
-                resetFailureReference();
                 ROS_INFO("Initialization finish!");
             }
         }
@@ -734,17 +584,11 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
     }
     else
     {
-        const bool use_underwater_pnp_prior_in_imu_mode =
-            UNDERWATER_MODE && USE_IMU && !UNDERWATER_VISUAL_DOMINANT_VIO &&
-            UNDERWATER_PNP_PRIOR_IN_IMU_MODE;
-        if(!USE_IMU || UNDERWATER_VISUAL_DOMINANT_VIO || use_underwater_pnp_prior_in_imu_mode)
-        {
-            double pnp_step_limit = UNDERWATER_PNP_MAX_STEP_M;
-            f_manager.initFramePoseByPnP(frame_count, Ps, Rs, tic, ric,
-                                         pnp_step_limit, currentPnpRotationLimit());
-        }
+        if(!USE_IMU)
+            f_manager.initFramePoseByPnP(frame_count, Ps, Rs, tic, ric);
         f_manager.triangulate(frame_count, Ps, Rs, tic, ric);
 
+        // optimization
         TicToc t_solve;
         optimization();
         ROS_INFO("solver costs: %f [ms]", t_solve.toc());
@@ -1086,7 +930,7 @@ void Estimator::double2vector()
         failure_occur = 0;
     }
 
-    if(USE_IMU && !UNDERWATER_VISUAL_DOMINANT_VIO)
+    if(USE_IMU)
     {
         Vector3d origin_R00 = Utility::R2ypr(Quaterniond(para_Pose[0][6],
                                                           para_Pose[0][3],
@@ -1138,7 +982,7 @@ void Estimator::double2vector()
         }
     }
 
-    if(USE_IMU && !UNDERWATER_VISUAL_DOMINANT_VIO)
+    if(USE_IMU)
     {
         for (int i = 0; i < NUM_OF_CAM; i++)
         {
@@ -1157,22 +1001,22 @@ void Estimator::double2vector()
         dep(i) = para_Feature[i][0];
     f_manager.setDepth(dep);
 
-    if(USE_IMU && !UNDERWATER_VISUAL_DOMINANT_VIO)
+    if(USE_IMU)
         td = para_Td[0][0];
 
 }
 
 bool Estimator::failureDetection()
 {
+    return false;
     if (f_manager.last_track_num < 2)
     {
         ROS_INFO(" little feature %d", f_manager.last_track_num);
         //return true;
     }
-    const double acc_bias_limit = UNDERWATER_MODE ? 20.0 : 2.5;
-    if (Bas[WINDOW_SIZE].norm() > acc_bias_limit)
+    if (Bas[WINDOW_SIZE].norm() > 2.5)
     {
-        ROS_INFO(" big IMU acc bias estimation %f > %f", Bas[WINDOW_SIZE].norm(), acc_bias_limit);
+        ROS_INFO(" big IMU acc bias estimation %f", Bas[WINDOW_SIZE].norm());
         return true;
     }
     if (Bgs[WINDOW_SIZE].norm() > 1.0)
@@ -1190,24 +1034,23 @@ bool Estimator::failureDetection()
     Vector3d tmp_P = Ps[WINDOW_SIZE];
     if ((tmp_P - last_P).norm() > 5)
     {
-        ROS_INFO(" big translation %f", (tmp_P - last_P).norm());
-        return true;
+        //ROS_INFO(" big translation");
+        //return true;
     }
     if (abs(tmp_P.z() - last_P.z()) > 1)
     {
-        ROS_INFO(" big z translation %f", abs(tmp_P.z() - last_P.z()));
-        return true;
+        //ROS_INFO(" big z translation");
+        //return true; 
     }
     Matrix3d tmp_R = Rs[WINDOW_SIZE];
     Matrix3d delta_R = tmp_R.transpose() * last_R;
     Quaterniond delta_Q(delta_R);
     double delta_angle;
-    double delta_q_w = std::max(-1.0, std::min(1.0, std::abs(delta_Q.w())));
-    delta_angle = acos(delta_q_w) * 2.0 / 3.14 * 180.0;
+    delta_angle = acos(delta_Q.w()) * 2.0 / 3.14 * 180.0;
     if (delta_angle > 50)
     {
-        ROS_INFO(" big delta_angle %f", delta_angle);
-        return true;
+        ROS_INFO(" big delta_angle ");
+        //return true;
     }
     return false;
 }
@@ -1216,7 +1059,6 @@ void Estimator::optimization()
 {
     TicToc t_whole, t_prepare;
     vector2double();
-    const bool use_full_imu_factor = USE_IMU && !UNDERWATER_VISUAL_DOMINANT_VIO;
 
     ceres::Problem problem;
     ceres::LossFunction *loss_function;
@@ -1232,10 +1074,10 @@ void Estimator::optimization()
         ceres::LocalParameterization *local_parameterization = new PoseLocalParameterization();
 #endif
         problem.AddParameterBlock(para_Pose[i], SIZE_POSE, local_parameterization);
-        if(use_full_imu_factor)
+        if(USE_IMU)
             problem.AddParameterBlock(para_SpeedBias[i], SIZE_SPEEDBIAS);
     }
-    if(!use_full_imu_factor)
+    if(!USE_IMU)
         problem.SetParameterBlockConstant(para_Pose[0]);
 
     for (int i = 0; i < NUM_OF_CAM; i++)
@@ -1269,7 +1111,7 @@ void Estimator::optimization()
         problem.AddResidualBlock(marginalization_factor, NULL,
                                  last_marginalization_parameter_blocks);
     }
-    if(use_full_imu_factor)
+    if(USE_IMU)
     {
         for (int i = 0; i < frame_count; i++)
         {
@@ -1286,7 +1128,7 @@ void Estimator::optimization()
     for (auto &it_per_id : f_manager.feature)
     {
         it_per_id.used_num = it_per_id.feature_per_frame.size();
-        if (!f_manager.isDepthUsableForOptimization(it_per_id))
+        if (it_per_id.used_num < 4)
             continue;
  
         ++feature_index;
@@ -1333,18 +1175,8 @@ void Estimator::optimization()
     ceres::Solver::Options options;
 
     if (USE_GPU_CERES)
-    {
-#if CERES_VERSION_MAJOR > 2 || (CERES_VERSION_MAJOR == 2 && CERES_VERSION_MINOR >= 2)
-        // std::cout << "1" << endl;
-        options.dense_linear_algebra_library_type = ceres::CUDA;
-#else
-        options.linear_solver_type = ceres::DENSE_SCHUR;
-        ROS_WARN("USE_GPU_CERES requested, but this Ceres build has no CUDA backend; using DENSE_SCHUR");
-#endif
-    }
-    else
-        // std::cout << "2" << endl;
-        options.linear_solver_type = ceres::DENSE_SCHUR;
+        ROS_WARN("use_gpu_ceres is set, but this build uses CPU Ceres; falling back to DENSE_SCHUR");
+    options.linear_solver_type = ceres::DENSE_SCHUR;
 
     //options.num_threads = 2;
     options.trust_region_strategy_type = ceres::DOGLEG;
@@ -1394,7 +1226,7 @@ void Estimator::optimization()
             marginalization_info->addResidualBlockInfo(residual_block_info);
         }
 
-        if(use_full_imu_factor)
+        if(USE_IMU)
         {
             if (pre_integrations[1]->sum_dt < 10.0)
             {
@@ -1411,7 +1243,7 @@ void Estimator::optimization()
             for (auto &it_per_id : f_manager.feature)
             {
                 it_per_id.used_num = it_per_id.feature_per_frame.size();
-                if (!f_manager.isDepthUsableForOptimization(it_per_id))
+                if (it_per_id.used_num < 4)
                     continue;
 
                 ++feature_index;
@@ -1473,7 +1305,7 @@ void Estimator::optimization()
         for (int i = 1; i <= WINDOW_SIZE; i++)
         {
             addr_shift[reinterpret_cast<long>(para_Pose[i])] = para_Pose[i - 1];
-            if(use_full_imu_factor)
+            if(USE_IMU)
                 addr_shift[reinterpret_cast<long>(para_SpeedBias[i])] = para_SpeedBias[i - 1];
         }
         for (int i = 0; i < NUM_OF_CAM; i++)
@@ -1536,13 +1368,13 @@ void Estimator::optimization()
                 else if (i == WINDOW_SIZE)
                 {
                     addr_shift[reinterpret_cast<long>(para_Pose[i])] = para_Pose[i - 1];
-                    if(use_full_imu_factor)
+                    if(USE_IMU)
                         addr_shift[reinterpret_cast<long>(para_SpeedBias[i])] = para_SpeedBias[i - 1];
                 }
                 else
                 {
                     addr_shift[reinterpret_cast<long>(para_Pose[i])] = para_Pose[i];
-                    if(use_full_imu_factor)
+                    if(USE_IMU)
                         addr_shift[reinterpret_cast<long>(para_SpeedBias[i])] = para_SpeedBias[i];
                 }
             }
@@ -1761,7 +1593,7 @@ void Estimator::outliersRejection(set<int> &removeIndex)
         double err = 0;
         int errCnt = 0;
         it_per_id.used_num = it_per_id.feature_per_frame.size();
-        if (!f_manager.isDepthUsableForOptimization(it_per_id))
+        if (it_per_id.used_num < 4)
             continue;
         feature_index ++;
         int imu_i = it_per_id.start_frame, imu_j = imu_i - 1;
@@ -1805,11 +1637,8 @@ void Estimator::outliersRejection(set<int> &removeIndex)
                 }       
             }
         }
-        if (errCnt == 0)
-            continue;
         double ave_err = err / errCnt;
-        double reprojection_gate_px = UNDERWATER_MODE ? UNDERWATER_MAX_REPROJECTION_RMSE_PX : 3.0;
-        if(ave_err * FOCAL_LENGTH > reprojection_gate_px)
+        if(ave_err * FOCAL_LENGTH > 3)
             removeIndex.insert(it_per_id.feature_id);
 
     }

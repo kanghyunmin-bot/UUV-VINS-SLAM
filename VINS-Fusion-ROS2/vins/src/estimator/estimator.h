@@ -19,7 +19,6 @@
 #include <opencv2/core/eigen.hpp>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
-#include <deque>
 
 #include "parameters.h"
 #include "feature_manager.h"
@@ -143,7 +142,6 @@ class Estimator
     FeatureManager f_manager;
     MotionEstimator m_estimator;
     InitialEXRotation initial_ex_rotation;
-    std::deque<int> underwater_init_pnp_status;
 
     bool first_imu;
     bool is_valid, is_key;

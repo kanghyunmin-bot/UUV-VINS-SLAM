@@ -515,7 +515,7 @@ def write_visual_csv(path: Path, rows: list[dict[str, object]]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Diagnose VIO frame, stereo, and camera-IMU contracts.")
     parser.add_argument("--data-dir", type=Path, default=Path("data/rosbag_active/localization bag"))
-    parser.add_argument("--config", type=Path, default=Path("VINS-Fusion-ROS2/config/realsense_d435i/underwater_realsense_stereo_mavros_imu_config.yaml"))
+    parser.add_argument("--config", type=Path, default=Path("VINS-Fusion-ROS2/config/realsense_d435i/realsense_stereo_mavros_imu_config.yaml"))
     parser.add_argument("--left-calib", type=Path, default=Path("VINS-Fusion-ROS2/config/realsense_d435i/left.yaml"))
     parser.add_argument("--out-json", type=Path, default=Path("outputs/evaluation/vio_contract_diagnostics.json"))
     parser.add_argument("--visual-csv", type=Path, default=Path("outputs/evaluation/vio_contract_visual_rotation.csv"))

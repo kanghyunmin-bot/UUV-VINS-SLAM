@@ -14,7 +14,6 @@
 #include <std_msgs/msg/float32.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <sensor_msgs/msg/imu.hpp>
-#include <sensor_msgs/msg/laser_scan.hpp>
 #include <sensor_msgs/msg/point_cloud.hpp>
 #include <sensor_msgs/msg/image.hpp>
 // #include <sensor_msgs/image_encodings.h>
@@ -47,12 +46,7 @@ void registerPub(rclcpp::Node::SharedPtr n);
 
 void pubLatestOdometry(const Eigen::Vector3d &P, const Eigen::Quaterniond &Q, const Eigen::Vector3d &V, double t);
 
-void pubTrackImage(
-    const cv::Mat &imgTrack,
-    const double t,
-    const cv::Mat &leftTrack = cv::Mat(),
-    const cv::Mat &rightTrack = cv::Mat()
-);
+void pubTrackImage(const cv::Mat &imgTrack, const double t);
 
 void printStatistics(const Estimator &estimator, double t);
 

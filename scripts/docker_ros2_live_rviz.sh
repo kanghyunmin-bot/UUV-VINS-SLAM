@@ -10,7 +10,7 @@ IMAGE_SOURCE_TYPE="${IMAGE_SOURCE_TYPE:-mp4}"
 RUN_ONCE="${RUN_ONCE:-0}"
 IMU_RESAMPLE_HZ="${IMU_RESAMPLE_HZ:-100}"
 LOG_DIR="${LOG_DIR:-/tmp/uuv_ros2_live}"
-CONFIG="${CONFIG:-${ROOT}/VINS-Fusion-ROS2/config/realsense_d435i/underwater_realsense_stereo_mavros_imu_config.yaml}"
+CONFIG="${CONFIG:-${ROOT}/VINS-Fusion-ROS2/config/realsense_d435i/realsense_stereo_mavros_imu_config.yaml}"
 RVIZ_CONFIG="${RVIZ_CONFIG:-${ROOT}/rviz/uuv_vins_minimal.rviz}"
 EKF_CONFIG="${EKF_CONFIG:-${ROOT}/config/ekf_vins_pixhawk.yaml}"
 ROSBAG_INPUT_DIR="${ROSBAG_INPUT_DIR:-${ROOT}/data/rosbag_active/localization bag}"
@@ -88,7 +88,7 @@ if [[ -z "${DVL_CSV}" ]]; then
   if [[ -n "${MANIFEST_DVL_CSV}" && -f "${ROSBAG_INPUT_DIR}/${MANIFEST_DVL_CSV}" ]]; then
     DVL_CSV="${ROSBAG_INPUT_DIR}/${MANIFEST_DVL_CSV}"
   else
-    DVL_CSV="${ROSBAG_INPUT_DIR}/dvl_reference_0_30s.csv"
+    DVL_CSV="$(find "${ROSBAG_INPUT_DIR}" -maxdepth 1 -name 'dvl_reference_*.csv' -print -quit 2>/dev/null || true)"
   fi
 fi
 LOCALIZATION_REFERENCE_CSV="${LOCALIZATION_REFERENCE_CSV:-}"
@@ -176,8 +176,6 @@ export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_cyclonedds_cpp}"
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-42}"
 export ROS_LOCALHOST_ONLY="${ROS_LOCALHOST_ONLY:-0}"
 export QT_X11_NO_MITSHM="${QT_X11_NO_MITSHM:-1}"
-export VINS_OUTPUT_PATH="${VINS_OUTPUT_PATH:-${ROOT}/outputs/ros2_vins_fusion_live}"
-
 mkdir -p "${LOG_DIR}" "${ROOT}/outputs/ros2_vins_fusion_live"
 case "${IMAGE_SOURCE_TYPE}" in
   mp4|bag) ;;
@@ -471,6 +469,7 @@ python3 "${ROOT}/scripts/ros2_publish_stereo_mp4.py" \
   "${schedule_imu_args[@]}" \
   --max-duration-sec "${PLAY_SECONDS}" \
   --rate "${PLAY_RATE}" \
+  --queue-size "${ROS_TOPIC_QUEUE_SIZE:-2000}" \
   --export-schedule-dir "${SCHEDULE_DIR}" \
   --export-schedule-only \
   > "${LOG_DIR}/mp4_schedule_export.log" 2>&1
@@ -578,6 +577,7 @@ run_vins_stereo_loop() {
       "${publish_imu_args[@]}" \
       --max-duration-sec "${PLAY_SECONDS}" \
       --rate "${PLAY_RATE}" \
+      --queue-size "${ROS_TOPIC_QUEUE_SIZE:-2000}" \
       > "${LOG_DIR}/mp4_publish.log" 2>&1 &
     mp4_pid=$!
 

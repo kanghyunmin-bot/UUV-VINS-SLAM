@@ -102,19 +102,13 @@ class FeatureManager
     void triangulate(int frameCnt, Vector3d Ps[], Matrix3d Rs[], Vector3d tic[], Matrix3d ric[]);
     void triangulatePoint(Eigen::Matrix<double, 3, 4> &Pose0, Eigen::Matrix<double, 3, 4> &Pose1,
                             Eigen::Vector2d &point0, Eigen::Vector2d &point1, Eigen::Vector3d &point_3d);
-    bool initFramePoseByPnP(int frameCnt, Vector3d Ps[], Matrix3d Rs[], Vector3d tic[], Matrix3d ric[],
-                            double underwater_pnp_step_limit_m = -1.0,
-                            double underwater_pnp_rotation_limit_rad = -1.0);
+    void initFramePoseByPnP(int frameCnt, Vector3d Ps[], Matrix3d Rs[], Vector3d tic[], Matrix3d ric[]);
     bool solvePoseByPnP(Eigen::Matrix3d &R_initial, Eigen::Vector3d &P_initial, 
-                            vector<cv::Point2f> &pts2D, vector<cv::Point3f> &pts3D,
-                            int *inlier_count = nullptr,
-                            double *rmse_px = nullptr,
-                            std::string *reject_reason = nullptr);
+                            vector<cv::Point2f> &pts2D, vector<cv::Point3f> &pts3D);
     void removeBackShiftDepth(Eigen::Matrix3d marg_R, Eigen::Vector3d marg_P, Eigen::Matrix3d new_R, Eigen::Vector3d new_P);
     void removeBack();
     void removeFront(int frame_count);
     void removeOutlier(set<int> &outlierIndex);
-    bool isDepthUsableForOptimization(const FeaturePerId &it_per_id) const;
     list<FeaturePerId> feature;
     int last_track_num;
     double last_average_parallax;
@@ -122,13 +116,6 @@ class FeatureManager
     int long_track_num;
 
   private:
-    bool isUnderwaterDepthValueValid(double depth, const Eigen::Vector3d *local_point = nullptr) const;
-    Eigen::Vector3d correctUnderwaterRefractiveRay(const Eigen::Vector3d &point) const;
-    double correctUnderwaterRefractiveDepth(double depth) const;
-    Eigen::Matrix3d applyUnderwaterGravityPnPConstraint(
-        const Eigen::Matrix3d &previous_body_R,
-        const Eigen::Matrix3d &candidate_body_R
-    ) const;
     double compensatedParallax2(const FeaturePerId &it_per_id, int frame_count);
     const Matrix3d *Rs;
     Matrix3d ric[2];

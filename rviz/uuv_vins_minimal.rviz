@@ -37,28 +37,14 @@ Visualization Manager:
       Max Value: 1
       Median window: 5
       Min Value: 0
-      Name: VINS Tracking Left
+      Name: VINS Tracking Stereo
       Normalize Range: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /vins_estimator/image_track_left
-      Value: true
-    - Class: rviz_default_plugins/Image
-      Enabled: true
-      Max Value: 1
-      Median window: 5
-      Min Value: 0
-      Name: VINS Tracking Right
-      Normalize Range: true
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /vins_estimator/image_track_right
+        Value: /vins_estimator/image_track
       Value: true
     - Alpha: 1
       Buffer Length: 1

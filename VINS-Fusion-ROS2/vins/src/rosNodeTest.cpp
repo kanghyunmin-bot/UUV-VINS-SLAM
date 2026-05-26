@@ -14,7 +14,7 @@
 #include <map>
 #include <thread>
 #include <mutex>
-#include <cmath>
+#include <algorithm>
 #include <rclcpp/rclcpp.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
@@ -29,35 +29,6 @@ queue<sensor_msgs::msg::PointCloud::ConstPtr> feature_buf;
 queue<sensor_msgs::msg::Image::ConstPtr> img0_buf;
 queue<sensor_msgs::msg::Image::ConstPtr> img1_buf;
 std::mutex m_buf;
-
-namespace
-{
-double last_accepted_image_time = -1.0;
-int image_freq_skip_count = 0;
-
-bool dropImageForFrequency(double time)
-{
-    if (IMAGE_FREQ <= 0.0 || !std::isfinite(IMAGE_FREQ))
-        return false;
-    const double min_dt = 1.0 / IMAGE_FREQ;
-    if (last_accepted_image_time >= 0.0 && time - last_accepted_image_time < min_dt)
-    {
-        image_freq_skip_count++;
-        if (image_freq_skip_count % 30 == 0)
-        {
-            ROS_INFO(
-                "image freq gate skipped %d frames, latest dt %.3f < %.3f sec",
-                image_freq_skip_count,
-                time - last_accepted_image_time,
-                min_dt
-            );
-        }
-        return true;
-    }
-    last_accepted_image_time = time;
-    return false;
-}
-}
 
 // header: 1403715278
 void img0_callback(const sensor_msgs::msg::Image::SharedPtr img_msg)
@@ -116,14 +87,12 @@ void sync_process()
                 double time0 = img0_buf.front()->header.stamp.sec + img0_buf.front()->header.stamp.nanosec * (1e-9);
                 double time1 = img1_buf.front()->header.stamp.sec + img1_buf.front()->header.stamp.nanosec * (1e-9);
 
-                double sync_tolerance = UNDERWATER_STEREO_SYNC_TOLERANCE > 0.0 ?
-                    UNDERWATER_STEREO_SYNC_TOLERANCE : 0.003;
-                if(time0 < time1 - sync_tolerance)
+                if(time0 < time1 - STEREO_SYNC_TOLERANCE)
                 {
                     img0_buf.pop();
                     printf("throw img0\n");
                 }
-                else if(time0 > time1 + sync_tolerance)
+                else if(time0 > time1 + STEREO_SYNC_TOLERANCE)
                 {
                     img1_buf.pop();
                     printf("throw img1\n");
@@ -132,18 +101,11 @@ void sync_process()
                 {
                     time = img0_buf.front()->header.stamp.sec + img0_buf.front()->header.stamp.nanosec * (1e-9);
                     header = img0_buf.front()->header;
-                    auto img0_msg = img0_buf.front();
-                    auto img1_msg = img1_buf.front();
+                    image0 = getImageFromMsg(img0_buf.front());
                     img0_buf.pop();
+                    image1 = getImageFromMsg(img1_buf.front());
                     img1_buf.pop();
-                    if (!dropImageForFrequency(time))
-                    {
-                        image0 = getImageFromMsg(img0_msg);
-                        image1 = getImageFromMsg(img1_msg);
-                    }
-                    // Offline bag replay should preserve stereo pairs; real-time mode can
-                    // still drop backlog through the config flag.
-                    while(UNDERWATER_DROP_OLD_FRAMES && img0_buf.size() > 1 && img1_buf.size() > 1)
+                    while(DROP_OLD_FRAMES && img0_buf.size() > 1 && img1_buf.size() > 1)
                     {
                         img0_buf.pop();
                         img1_buf.pop();
@@ -164,11 +126,9 @@ void sync_process()
             {
                 time = img0_buf.front()->header.stamp.sec + img0_buf.front()->header.stamp.nanosec * (1e-9);
                 header = img0_buf.front()->header;
-                auto img_msg = img0_buf.front();
+                image = getImageFromMsg(img0_buf.front());
                 img0_buf.pop();
-                if (!dropImageForFrequency(time))
-                    image = getImageFromMsg(img_msg);
-                while(UNDERWATER_DROP_OLD_FRAMES && img0_buf.size() > 1)
+                while(DROP_OLD_FRAMES && img0_buf.size() > 1)
                 {
                     img0_buf.pop();
                 }
@@ -199,8 +159,7 @@ void imu_callback(const sensor_msgs::msg::Imu::SharedPtr imu_msg)
     Vector3d gyr(rx, ry, rz);
 
     // std::cout << "got t_imu: " << std::fixed << t << endl;
-    if (USE_IMU)
-        estimator.inputIMU(t, acc, gyr);
+    estimator.inputIMU(t, acc, gyr);
     return;
 }
 
@@ -285,7 +244,6 @@ void cam_switch_callback(const std_msgs::msg::Bool::SharedPtr switch_msg)
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
-    cv::setRNGSeed(0);
 	auto n = rclcpp::Node::make_shared("vins_estimator");
     // ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
 
@@ -313,14 +271,19 @@ int main(int argc, char **argv)
     registerPub(n);
 
 
+    rclcpp::QoS image_qos(rclcpp::KeepLast(std::max(1, IMAGE_QOS_DEPTH)));
+    image_qos.durability_volatile();
+    if (IMAGE_QOS_RELIABLE)
+        image_qos.reliable();
+    else
+        image_qos.best_effort();
+
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu = NULL;
     if(USE_IMU)
     {
         sub_imu = n->create_subscription<sensor_msgs::msg::Imu>(IMU_TOPIC, rclcpp::SensorDataQoS().keep_last(2000), imu_callback);
     }
     auto sub_feature = n->create_subscription<sensor_msgs::msg::PointCloud>("/feature_tracker/feature", rclcpp::QoS(rclcpp::KeepLast(2000)), feature_callback);
-    rclcpp::QoS image_qos(rclcpp::KeepLast(500));
-    image_qos.reliable();
     auto sub_img0 = n->create_subscription<sensor_msgs::msg::Image>(IMAGE0_TOPIC, image_qos, img0_callback);
 
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_img1 = NULL;
@@ -334,18 +297,9 @@ int main(int argc, char **argv)
     auto sub_cam_switch = n->create_subscription<std_msgs::msg::Bool>("/vins_cam_switch", rclcpp::QoS(rclcpp::KeepLast(100)), cam_switch_callback);
 
     std::thread sync_thread{sync_process};
-    if (MULTIPLE_THREAD)
-    {
-        rclcpp::executors::MultiThreadedExecutor executor;
-        executor.add_node(n);
-        executor.spin();
-    }
-    else
-    {
-        rclcpp::executors::SingleThreadedExecutor executor;
-        executor.add_node(n);
-        executor.spin();
-    }
+    rclcpp::executors::MultiThreadedExecutor executor;
+    executor.add_node(n);
+    executor.spin();
 
     return 0;
 }

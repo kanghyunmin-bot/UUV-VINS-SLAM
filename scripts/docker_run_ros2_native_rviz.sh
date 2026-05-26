@@ -167,8 +167,7 @@ if [[ "${NATIVE_RVIZ_TRANSPORT}" == "tcp_bridge" ]]; then
       --topic /point_cloud:sensor_msgs/msg/PointCloud \
       --topic /tf_static:tf2_msgs/msg/TFMessage \
       --topic /clock:rosgraph_msgs/msg/Clock \
-      --topic /vins_estimator/image_track_left:sensor_msgs/msg/Image \
-      --topic /vins_estimator/image_track_right:sensor_msgs/msg/Image \
+      --topic /vins_estimator/image_track:sensor_msgs/msg/Image \
       > /workspace/under_water_image_match/outputs/docker_native_rviz/container/tcp_bridge_server.log 2>&1
   "
 fi

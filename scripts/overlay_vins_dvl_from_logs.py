@@ -75,7 +75,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--dvl-csv",
         type=Path,
-        default=PROJECT_ROOT / "data/rosbag_active/dvl_reference_0_30s.csv",
+        default=PROJECT_ROOT / "data/rosbag_active/localization bag/dvl_reference_34_85s.csv",
     )
     parser.add_argument(
         "--overlay-csv",

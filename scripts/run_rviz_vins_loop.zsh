@@ -4,7 +4,7 @@ set -e
 ROOT=/Users/kanghyunmin/Desktop/under_water_image_match
 ROSBAG_INPUT_DIR=${ROSBAG_INPUT_DIR:-$ROOT/data/rosbag_active}
 BAG=${BAG:-$ROSBAG_INPUT_DIR}
-CONFIG=${CONFIG:-$ROOT/VINS-Fusion-ROS2/config/realsense_d435i/underwater_realsense_stereo_mavros_imu_config.yaml}
+CONFIG=${CONFIG:-$ROOT/VINS-Fusion-ROS2/config/realsense_d435i/realsense_stereo_mavros_imu_config.yaml}
 LOG_DIR=${LOG_DIR:-/tmp/uuv_rviz_loop}
 PLAY_SECONDS=${PLAY_SECONDS:-30}
 INFRA1_MP4=${INFRA1_MP4:-$ROSBAG_INPUT_DIR/infra1_image_rect_raw.mp4}
@@ -103,7 +103,8 @@ while true; do
     --left-stamp-topic /camera/camera/infra1/image_rect_raw \
     --right-stamp-topic /camera/camera/infra2/image_rect_raw \
     --max-duration-sec "$PLAY_SECONDS" \
-    --rate 1.0
+    --rate 1.0 \
+    --queue-size "${ROS_TOPIC_QUEUE_SIZE:-2000}"
   )
   if [[ "$AUTO_TRIM_TO_IMU" == "1" ]]; then
     mp4_cmd+=(
