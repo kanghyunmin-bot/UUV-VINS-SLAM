@@ -1,0 +1,50 @@
+FROM osrf/ros:humble-desktop
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENV ROS_DOMAIN_ID=42
+ENV QT_X11_NO_MITSHM=1
+ENV WORKSPACE=/workspace/under_water_image_match
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
+    build-essential \
+    cmake \
+    fluxbox \
+    git \
+    libceres-dev \
+    libeigen3-dev \
+    libgoogle-glog-dev \
+    libgl1-mesa-dri \
+    libglx-mesa0 \
+    libopencv-dev \
+    libsuitesparse-dev \
+    mesa-utils \
+    novnc \
+    procps \
+    python3-colcon-common-extensions \
+    python3-numpy \
+    python3-opencv \
+    python3-pip \
+    ros-humble-cv-bridge \
+    ros-humble-image-transport \
+    ros-humble-rmw-cyclonedds-cpp \
+    ros-humble-robot-localization \
+    ros-humble-rosbag2-storage-default-plugins \
+    ros-humble-tf2 \
+    ros-humble-tf2-ros \
+    ros-humble-vision-opencv \
+    screen \
+    websockify \
+    x11vnc \
+    xvfb \
+    zsh \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR ${WORKSPACE}
+
+COPY scripts/docker_ros2_entrypoint.sh /usr/local/bin/uuv_ros2_entrypoint.sh
+RUN chmod +x /usr/local/bin/uuv_ros2_entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/uuv_ros2_entrypoint.sh"]
+CMD ["bash"]

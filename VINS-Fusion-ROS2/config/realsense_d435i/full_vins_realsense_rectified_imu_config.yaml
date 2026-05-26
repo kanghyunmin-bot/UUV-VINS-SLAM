@@ -1,0 +1,106 @@
+%YAML:1.0
+
+# Diagnostic profile: use the original tightly-coupled VINS path with D435i
+# rectified stereo intrinsics/baseline. DVL is not an estimator input.
+
+imu: 1
+num_of_cam: 2
+
+imu_topic: "/camera/camera/imu"
+image0_topic: "/camera/camera/infra1/image_rect_raw"
+image1_topic: "/camera/camera/infra2/image_rect_raw"
+output_path: "/Users/kanghyunmin/Desktop/under_water_image_match/outputs/ros2_vins_fusion_live/"
+
+cam0_calib: "left.yaml"
+cam1_calib: "right.yaml"
+image_width: 848
+image_height: 480
+
+use_gpu: 0
+use_gpu_acc_flow: 0
+use_gpu_ceres: 0
+
+# The rosbag provides rectified IR stereo and RealSense IMU samples in optical
+# coordinates. Without a real underwater Kalibr result, use the D435i nominal
+# geometry instead of the previous optical-to-ROS-like hardcoded transform.
+estimate_extrinsic: 0
+
+body_T_cam0: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: d
+   data: [ 1., 0., 0., -0.00552,
+           0., 1., 0.,  0.00510,
+           0., 0., 1.,  0.01174,
+           0., 0., 0.,  1. ]
+
+body_T_cam1: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: d
+   data: [ 1., 0., 0.,  0.04451650043634849,
+           0., 1., 0.,  0.00510,
+           0., 0., 1.,  0.01174,
+           0., 0., 0.,  1. ]
+
+multiple_thread: 1
+
+# Stock-ish VINS feature settings, with slightly denser underwater tracking.
+max_cnt: 300
+min_dist: 20
+freq: 10
+F_threshold: 0.8
+show_track: 1
+flow_back: 1
+
+# Keep the original tightly-coupled IMU factor active, but seed each new frame
+# with a gated stereo PnP pose before optimization. This is still pure VIO:
+# DVL is not used by the estimator.
+underwater_mode: 1
+underwater_visual_dominant_vio: 0
+underwater_pnp_prior_in_imu_mode: 1
+underwater_temporal_ransac: 1
+underwater_quad_enable: 1
+underwater_grid_rows: 4
+underwater_grid_cols: 6
+underwater_cell_max_features: 20
+underwater_quad_right_closure_threshold_px: 5.0
+underwater_quad_right_fb_threshold_px: 0.0
+underwater_quad_motion_consistency_threshold_px: 0.0
+underwater_quad_min_candidates: 12
+underwater_quad_min_tracks_after_rejection: 40
+underwater_stereo_max_y_diff_px: 4.0
+underwater_pnp_ransac: 1
+underwater_min_pnp_inliers: 18
+underwater_soft_min_pnp_inliers: 12
+underwater_min_pnp_inlier_ratio: 0.85
+underwater_pnp_reproj_threshold_px: 2.5
+underwater_max_reprojection_rmse_px: 2.5
+underwater_projection_noise_px: 3.0
+underwater_pnp_max_step_m: 0.20
+underwater_min_landmark_depth: 0.20
+underwater_max_landmark_depth: 1.50
+underwater_max_landmark_range: 1.50
+underwater_vertical_axis: 2
+underwater_stable_point_cloud: 0
+
+max_solver_time: 0.04
+max_num_iterations: 8
+keyframe_parallax: 10.0
+
+acc_n: 1.00
+gyr_n: 0.10
+acc_w: 0.020
+gyr_w: 0.002
+g_norm: 9.805
+
+estimate_td: 0
+td: 0.0
+
+load_previous_pose_graph: 0
+pose_graph_save_path: "/home/dji/output/pose_graph/"
+save_image: 0
+
+world_frame_id: "world"
+body_frame_id: "body"
+camera_frame_id: "camera"

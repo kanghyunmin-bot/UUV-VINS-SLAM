@@ -3,6 +3,12 @@ __pycache__/
 *.pyc
 .DS_Store
 outputs/
+data/
+archive/
+my-vins/
+docs/course_materials/
+docs/reference_papers/
+docs/reports/
 video_src/
 *.mov
 *.mp4
@@ -21,5 +27,11 @@ third_party/
 ros2_overlay_ws/build/
 ros2_overlay_ws/install/
 ros2_overlay_ws/log/
+VINS-Fusion-ROS2/build_docker/
+VINS-Fusion-ROS2/install_docker/
+VINS-Fusion-ROS2/log_docker/
+ros2_overlay_ws/build_docker/
+ros2_overlay_ws/install_docker/
+ros2_overlay_ws/log_docker/
 PY
 , tr.child_frame_id*

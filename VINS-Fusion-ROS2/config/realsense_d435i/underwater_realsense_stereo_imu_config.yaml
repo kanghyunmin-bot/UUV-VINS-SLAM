@@ -1,0 +1,168 @@
+%YAML:1.0
+
+# D435i underwater stereo+IMU configuration for the ROS2 VINS-Fusion port.
+# DVL is intentionally absent. Use DVL only for offline scoring/overlay.
+
+imu: 1
+num_of_cam: 2
+
+imu_topic: "/camera/camera/imu"
+image0_topic: "/camera/camera/infra1/image_rect_raw"
+image1_topic: "/camera/camera/infra2/image_rect_raw"
+output_path: "/Users/kanghyunmin/Desktop/under_water_image_match/outputs/ros2_vins_fusion_live/"
+
+cam0_calib: "left.yaml"
+cam1_calib: "right.yaml"
+image_width: 848
+image_height: 480
+
+use_gpu: 0
+use_gpu_acc_flow: 0
+use_gpu_ceres: 0
+
+# body_T_cam is an initial guess, but this low-FPS underwater sequence does
+# not constrain online extrinsic estimation well enough for stable live VIO.
+estimate_extrinsic: 0
+
+body_T_cam0: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: d
+   # Bag TF contract: body is camera_gyro_optical_frame and cam0 is
+   # camera_infra1_optical_frame. They share optical axes; only translation
+   # separates the RealSense IMU and IR imagers.
+   data: [ 1., 0., 0., -0.00552,
+           0., 1., 0.,  0.00510,
+           0., 0., 1.,  0.01174,
+           0., 0., 0.,  1. ]
+
+body_T_cam1: !!opencv-matrix
+   rows: 4
+   cols: 4
+   dt: d
+   # camera_infra2_optical_frame relative to camera_gyro_optical_frame.
+   data: [ 1., 0., 0.,  0.04451650043634849,
+           0., 1., 0.,  0.00510,
+           0., 0., 1.,  0.01174,
+           0., 0., 0.,  1. ]
+
+multiple_thread: 0
+
+# Feature tracker parameters. Keep enough wall-grid features for VIO while
+# avoiding a CPU-heavy cloud of weak underwater particles.
+max_cnt: 500
+min_dist: 12
+freq: 10
+F_threshold: 0.55
+show_track: 1
+flow_back: 1
+
+# Integrated underwater gates. These run inside the existing ROS2 VINS code path.
+underwater_mode: 1
+underwater_visual_dominant_vio: 1
+underwater_temporal_ransac: 1
+underwater_quad_enable: 1
+underwater_grid_rows: 3
+underwater_grid_cols: 4
+underwater_cell_max_features: 24
+underwater_quad_right_closure_threshold_px: 5.0
+underwater_quad_right_fb_threshold_px: 3.0
+underwater_quad_motion_consistency_threshold_px: 6.0
+underwater_flow_back_threshold_px: 2.5
+underwater_lk_win_size: 41
+underwater_lk_max_level: 5
+underwater_quad_min_candidates: 10
+underwater_quad_min_tracks_after_rejection: 8
+underwater_stereo_max_y_diff_px: 4.5
+underwater_stereo_ncc_fallback: 1
+underwater_stereo_ncc_patch_size: 11
+underwater_stereo_ncc_min_score: 0.82
+underwater_stereo_ncc_min_margin: 0.005
+underwater_stereo_min_disparity_px: 4.0
+underwater_stereo_max_disparity_px: 96.0
+underwater_stereo_ncc_y_radius_px: 4
+underwater_stereo_ncc_forward_back: 1
+underwater_stereo_ncc_min_track_cnt: 2
+underwater_stereo_ncc_require_temporal: 0
+underwater_stereo_ncc_max_candidates: 60
+underwater_refraction_enable: 0
+underwater_refraction_index: 1.333
+underwater_refraction_ray_blend: 0.0
+underwater_refraction_depth_scale: 1.00
+underwater_feature_depth_sign: 1.0
+underwater_rectified_stereo_depth_init: 0
+# VINS-internal camera-to-body pitch correction. Flat acrylic does not imply
+# this should be nonzero; use it only when body_T_cam axes are visibly wrong.
+underwater_extrinsic_pitch_rad: 0.0
+underwater_gravity_pnp_enable: 0
+underwater_gravity_pnp_yaw_blend: 0.85
+underwater_gravity_pnp_max_yaw_step_rad: 0.35
+underwater_stereo_sync_tolerance: 0.005
+underwater_drop_old_frames: 0
+underwater_pnp_prior_in_imu_mode: 1
+underwater_frontend_stats_log: 1
+underwater_pnp_mature_feature_selection: 1
+underwater_pnp_min_track_cnt: 4
+underwater_pnp_require_stereo: 1
+underwater_pnp_require_current_stereo: 1
+underwater_pnp_max_candidates: 140
+underwater_pnp_grid_rows: 3
+underwater_pnp_grid_cols: 4
+underwater_pnp_cell_max_features: 18
+underwater_pnp_ransac: 1
+underwater_min_pnp_inliers: 8
+underwater_soft_min_pnp_inliers: 8
+underwater_min_pnp_inlier_ratio: 0.10
+underwater_pnp_reproj_threshold_px: 8.0
+underwater_max_reprojection_rmse_px: 10.0
+underwater_projection_noise_px: 3.0
+underwater_pnp_max_step_m: 0.35
+underwater_pnp_max_rotation_rad: 0.35
+underwater_min_landmark_depth: 0.25
+underwater_max_landmark_depth: 6.00
+underwater_max_landmark_range: 7.00
+underwater_vertical_axis: 2
+
+# Stable VINS feature cloud publish filter.
+underwater_stable_point_cloud: 1
+underwater_stable_point_cloud_min_track_cnt: 2
+underwater_stable_point_cloud_max_depth: 5.00
+underwater_stable_point_cloud_max_range: 6.00
+
+# Underwater IR feature stabilization. CLAHE improves wall-grid texture, while
+# the masks prevent saturated glare, suspended particles, and low-structure
+# water regions from becoming landmarks.
+underwater_clahe_enable: 1
+underwater_clahe_clip_limit: 2.2
+underwater_clahe_tile_size: 8
+underwater_feature_min_intensity: 8
+underwater_feature_max_intensity: 242
+underwater_feature_structure_mask: 1
+underwater_feature_min_gradient: 7.0
+underwater_feature_support_window: 21
+underwater_feature_min_support_pixels: 42.0
+underwater_feature_bright_blob_threshold: 235
+underwater_feature_max_blob_area: 70
+underwater_feature_blob_dilate_px: 2
+
+max_solver_time: 0.04
+max_num_iterations: 8
+keyframe_parallax: 5.0
+
+acc_n: 1.00
+gyr_n: 0.10
+acc_w: 0.020
+gyr_w: 0.002
+g_norm: 9.805
+
+estimate_td: 0
+td: 0.0
+
+load_previous_pose_graph: 0
+pose_graph_save_path: "/home/dji/output/pose_graph/"
+save_image: 0
+
+world_frame_id: "world"
+body_frame_id: "body"
+camera_frame_id: "camera"
+publish_vins_tf: 0
