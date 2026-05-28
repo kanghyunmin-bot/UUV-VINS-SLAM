@@ -5,7 +5,7 @@ ROOT="${ROOT:-/workspace/under_water_image_match}"
 PLAY_SECONDS="${PLAY_SECONDS:-30}"
 PLAY_RATE="${PLAY_RATE:-1.0}"
 RESTAMP_NOW="${RESTAMP_NOW:-1}"
-UNIFORM_STEREO_TIMESTAMPS="${UNIFORM_STEREO_TIMESTAMPS:-0}"
+UNIFORM_STEREO_TIMESTAMPS="${UNIFORM_STEREO_TIMESTAMPS:-auto}"
 IMAGE_SOURCE_TYPE="${IMAGE_SOURCE_TYPE:-mp4}"
 RUN_ONCE="${RUN_ONCE:-0}"
 IMU_RESAMPLE_HZ="${IMU_RESAMPLE_HZ:-100}"
@@ -153,14 +153,14 @@ RUN_BAG_LOCALIZATION_PATH="${RUN_BAG_LOCALIZATION_PATH:-1}"
 RUN_TF_LOCALIZED_PATH="${RUN_TF_LOCALIZED_PATH:-0}"
 SYNC_REPLAY_PATHS="${SYNC_REPLAY_PATHS:-1}"
 DVL_REPLAY_HZ="${DVL_REPLAY_HZ:-10.0}"
-LOCALIZATION_ALIGN_MODE="${LOCALIZATION_ALIGN_MODE:-none}"
-LOCALIZATION_ALIGN_YAW_DEG="${LOCALIZATION_ALIGN_YAW_DEG:-0.0}"
-FCU_TO_CAM0_X="${FCU_TO_CAM0_X:--0.03103}"
-FCU_TO_CAM0_Y="${FCU_TO_CAM0_Y:--0.023425138206636054}"
-FCU_TO_CAM0_Z="${FCU_TO_CAM0_Z:--0.06254}"
-FCU_TO_CAM1_X="${FCU_TO_CAM1_X:--0.03103}"
-FCU_TO_CAM1_Y="${FCU_TO_CAM1_Y:--0.07346077639431987}"
-FCU_TO_CAM1_Z="${FCU_TO_CAM1_Z:--0.06254}"
+LOCALIZATION_ALIGN_MODE="${LOCALIZATION_ALIGN_MODE:-start_yaw}"
+LOCALIZATION_ALIGN_YAW_DEG="${LOCALIZATION_ALIGN_YAW_DEG:--90.0}"
+FCU_TO_CAM0_X="${FCU_TO_CAM0_X:-0.06154}"
+FCU_TO_CAM0_Y="${FCU_TO_CAM0_Y:-0.01982}"
+FCU_TO_CAM0_Z="${FCU_TO_CAM0_Z:-0.02293}"
+FCU_TO_CAM1_X="${FCU_TO_CAM1_X:-0.06254}"
+FCU_TO_CAM1_Y="${FCU_TO_CAM1_Y:--0.03103}"
+FCU_TO_CAM1_Z="${FCU_TO_CAM1_Z:-0.02293}"
 FCU_TO_CAMERA_QX="${FCU_TO_CAMERA_QX:--0.5}"
 FCU_TO_CAMERA_QY="${FCU_TO_CAMERA_QY:-0.5}"
 FCU_TO_CAMERA_QZ="${FCU_TO_CAMERA_QZ:--0.5}"
@@ -184,6 +184,13 @@ case "${IMAGE_SOURCE_TYPE}" in
     exit 2
     ;;
 esac
+if [[ "${UNIFORM_STEREO_TIMESTAMPS}" == "auto" ]]; then
+  if [[ "${IMAGE_SOURCE_TYPE}" == "mp4" ]]; then
+    UNIFORM_STEREO_TIMESTAMPS="1"
+  else
+    UNIFORM_STEREO_TIMESTAMPS="0"
+  fi
+fi
 
 set +u
 source /opt/ros/humble/setup.bash
@@ -495,7 +502,7 @@ start_bag_localization_path() {
     --odom-topic /localization/odometry \
     --path-topic /localization/path \
     --frame-id world \
-    --child-frame-id fcu_link \
+    --child-frame-id base_link \
     --time-source header \
     --start-stamp-ns "${localization_start_stamp_ns}" \
     --max-duration-sec "${PLAY_SECONDS}" \
@@ -574,6 +581,7 @@ run_vins_stereo_loop() {
       "${stamp_match_args[@]}" \
       --auto-trim-to-imu \
       "${publish_window_args[@]}" \
+      "${stereo_timing_args[@]}" \
       "${publish_imu_args[@]}" \
       --max-duration-sec "${PLAY_SECONDS}" \
       --rate "${PLAY_RATE}" \

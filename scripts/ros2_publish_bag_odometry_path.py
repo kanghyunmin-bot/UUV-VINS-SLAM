@@ -267,7 +267,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--odom-topic", default="/localization/odometry")
     parser.add_argument("--path-topic", default="/localization/path")
     parser.add_argument("--frame-id", default="world")
-    parser.add_argument("--child-frame-id", default="fcu_link")
+    parser.add_argument("--child-frame-id", default="base_link")
     parser.add_argument("--time-source", choices=["header", "db"], default="header")
     parser.add_argument("--start-offset-sec", type=float, default=0.0)
     parser.add_argument("--start-stamp-ns", type=int, default=0)
