@@ -132,7 +132,7 @@ docker run \
   -e STAMP_DB="${STAMP_DB:-}" \
   -e BAG_DIR="${BAG_DIR:-}" \
   -e LOCALIZATION_REFERENCE_CSV="${LOCALIZATION_REFERENCE_CSV:-}" \
-  -e IMU_RESAMPLE_HZ="${IMU_RESAMPLE_HZ:-100}" \
+  -e IMU_RESAMPLE_HZ="${IMU_RESAMPLE_HZ:-0}" \
   -e IMU_SOURCE_TOPIC="${IMU_SOURCE_TOPIC-/mavros/imu/data}" \
   -e IMU_SOURCE_TYPE="${IMU_SOURCE_TYPE:-sensor_msgs/msg/Imu}" \
   -e IMU_OUTPUT_TOPIC="${IMU_OUTPUT_TOPIC:-/vins/imu/data}" \

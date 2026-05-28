@@ -11,6 +11,11 @@
 
 #include "feature_tracker.h"
 
+namespace
+{
+int stereoGateFrameCounter = 0;
+}
+
 bool FeatureTracker::inBorder(const cv::Point2f &pt)
 {
     const int BORDER_SIZE = 1;
@@ -268,7 +273,7 @@ map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> FeatureTracker::trackIm
 
     if (1)
     {
-        //rejectWithF();
+        rejectWithF();
         ROS_DEBUG("set mask begins");
         TicToc t_m;
         setMask();
@@ -419,17 +424,67 @@ map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> FeatureTracker::trackIm
                 // printf("gpu left right optical flow cost %fms\n",t_og1.toc());
             }
 #endif
+            if (status.size() != cur_pts.size() || cur_right_pts.size() != cur_pts.size())
+            {
+                ROS_WARN("stereo gate rejected frame: size mismatch left=%zu right=%zu status=%zu",
+                         cur_pts.size(), cur_right_pts.size(), status.size());
+                cur_right_pts.assign(cur_pts.size(), cv::Point2f());
+                status.assign(cur_pts.size(), 0);
+            }
+            int stereo_lk_ok = 0;
+            int stereo_kept = 0;
+            int reject_border = 0;
+            int reject_y = 0;
+            int reject_disp_low = 0;
+            int reject_disp_high = 0;
+            double disparity_sum = 0.0;
+            for(size_t i = 0; i < status.size(); i++)
+            {
+                if(!status[i])
+                    continue;
+                stereo_lk_ok++;
+                if(!inBorder(cur_right_pts[i]))
+                {
+                    status[i] = 0;
+                    reject_border++;
+                    continue;
+                }
+
+                const double y_diff = fabs(cur_pts[i].y - cur_right_pts[i].y);
+                const double disparity = cur_pts[i].x - cur_right_pts[i].x;
+                if(STEREO_MAX_Y_DIFF_PX > 0.0 && y_diff > STEREO_MAX_Y_DIFF_PX)
+                {
+                    status[i] = 0;
+                    reject_y++;
+                    continue;
+                }
+                if(STEREO_MIN_DISPARITY_PX > 0.0 && disparity < STEREO_MIN_DISPARITY_PX)
+                {
+                    status[i] = 0;
+                    reject_disp_low++;
+                    continue;
+                }
+                if(STEREO_MAX_DISPARITY_PX > 0.0 && disparity > STEREO_MAX_DISPARITY_PX)
+                {
+                    status[i] = 0;
+                    reject_disp_high++;
+                    continue;
+                }
+                stereo_kept++;
+                disparity_sum += disparity;
+            }
+            stereoGateFrameCounter++;
+            if(STEREO_GATE_LOG_INTERVAL > 0 &&
+               (stereoGateFrameCounter % STEREO_GATE_LOG_INTERVAL == 0 || stereo_kept < 12))
+            {
+                const double mean_disparity = stereo_kept > 0 ? disparity_sum / stereo_kept : 0.0;
+                ROS_INFO("stereo gate: left=%zu lk=%d kept=%d reject_border=%d reject_y=%d reject_disp_low=%d reject_disp_high=%d mean_disp_px=%.2f",
+                         cur_pts.size(), stereo_lk_ok, stereo_kept, reject_border, reject_y,
+                         reject_disp_low, reject_disp_high, mean_disparity);
+            }
             ids_right = ids;
             reduceVector(cur_right_pts, status);
             reduceVector(ids_right, status);
-            // only keep left-right pts
-            /*
-            reduceVector(cur_pts, status);
-            reduceVector(ids, status);
-            reduceVector(track_cnt, status);
-            reduceVector(cur_un_pts, status);
-            reduceVector(pts_velocity, status);
-            */
             cur_un_right_pts = undistortedPts(cur_right_pts, m_camera[1]);
             right_pts_velocity = ptsVelocity(ids_right, cur_un_right_pts, cur_un_right_pts_map, prev_un_right_pts_map);
             

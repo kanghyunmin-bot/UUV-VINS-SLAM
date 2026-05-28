@@ -54,6 +54,10 @@ freq: 10
 F_threshold: 1.0
 show_track: 1
 flow_back: 1
+stereo_max_y_diff_px: 3.0
+stereo_min_disparity_px: 2.0
+stereo_max_disparity_px: 80.0
+stereo_gate_log_interval: 10
 
 max_solver_time: 0.04
 max_num_iterations: 8

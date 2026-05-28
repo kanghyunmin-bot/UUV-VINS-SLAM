@@ -1,10 +1,10 @@
 %YAML:1.0
 
-# D435i stereo + MAVROS/Pixhawk IMU configuration for the standard ROS2
-# VINS-Fusion estimator contract. DVL and localization references are not
-# estimator inputs; they are published only by the outer replay/overlay scripts.
+# Diagnostic stereo-only configuration. This keeps the same D435i camera
+# contract as the MAVROS/Pixhawk VIO config, but disables IMU factors so we can
+# separate visual depth/feature failures from IMU preintegration failures.
 
-imu: 1
+imu: 0
 num_of_cam: 2
 
 imu_topic: "/vins/imu/data"
@@ -21,9 +21,6 @@ use_gpu: 0
 use_gpu_acc_flow: 0
 use_gpu_ceres: 0
 
-# body_T_cam is T_body_camera: it maps points from the D435i optical frames
-# into the MAVROS body frame (fcu_link). Keep it fixed here; online extrinsic
-# optimization is too weakly constrained in this low-FPS underwater replay.
 estimate_extrinsic: 0
 
 body_T_cam0: !!opencv-matrix
@@ -65,8 +62,6 @@ max_solver_time: 0.04
 max_num_iterations: 8
 keyframe_parallax: 10.0
 
-# MAVROS IMU noise values are deliberately conservative for this replay.
-# They are estimator parameters, not DVL/localization alignment knobs.
 acc_n: 5.00
 gyr_n: 0.10
 acc_w: 0.020

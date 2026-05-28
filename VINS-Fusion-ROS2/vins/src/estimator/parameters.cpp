@@ -53,6 +53,10 @@ int MIN_DIST;
 double F_THRESHOLD;
 int SHOW_TRACK;
 int FLOW_BACK;
+double STEREO_MAX_Y_DIFF_PX;
+double STEREO_MIN_DISPARITY_PX;
+double STEREO_MAX_DISPARITY_PX;
+int STEREO_GATE_LOG_INTERVAL;
 
 std::string WORLD_FRAME_ID;
 std::string BODY_FRAME_ID;
@@ -98,6 +102,21 @@ void readParameters(std::string config_file)
     F_THRESHOLD = fsSettings["F_threshold"];
     SHOW_TRACK = fsSettings["show_track"];
     FLOW_BACK = fsSettings["flow_back"];
+    STEREO_MAX_Y_DIFF_PX = 3.0;
+    if (!fsSettings["stereo_max_y_diff_px"].empty())
+        STEREO_MAX_Y_DIFF_PX = static_cast<double>(fsSettings["stereo_max_y_diff_px"]);
+    STEREO_MIN_DISPARITY_PX = 2.0;
+    if (!fsSettings["stereo_min_disparity_px"].empty())
+        STEREO_MIN_DISPARITY_PX = static_cast<double>(fsSettings["stereo_min_disparity_px"]);
+    STEREO_MAX_DISPARITY_PX = 80.0;
+    if (!fsSettings["stereo_max_disparity_px"].empty())
+        STEREO_MAX_DISPARITY_PX = static_cast<double>(fsSettings["stereo_max_disparity_px"]);
+    STEREO_GATE_LOG_INTERVAL = 10;
+    if (!fsSettings["stereo_gate_log_interval"].empty())
+        STEREO_GATE_LOG_INTERVAL = static_cast<int>(fsSettings["stereo_gate_log_interval"]);
+    ROS_INFO("stereo gate: max_y_diff_px=%.2f disparity_px=[%.2f, %.2f] log_interval=%d",
+             STEREO_MAX_Y_DIFF_PX, STEREO_MIN_DISPARITY_PX,
+             STEREO_MAX_DISPARITY_PX, STEREO_GATE_LOG_INTERVAL);
 
     MULTIPLE_THREAD = fsSettings["multiple_thread"];
     STEREO_SYNC_TOLERANCE = 0.003;
